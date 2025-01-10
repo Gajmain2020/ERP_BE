@@ -74,13 +74,6 @@ const studentDetailsSchema = new mongoose.Schema(
       },
       required: true,
     },
-    email: {
-      type: String,
-      validate: {
-        validator: (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),
-        message: "Invalid email format.",
-      },
-    },
 
     // Parent/Guardian Details
     guardianDetails: {
@@ -158,6 +151,7 @@ const studentDetailsSchema = new mongoose.Schema(
 
     // Academic Details
     admissionNumber: { ...reqString, unique: true }, // Unique admission number
+    abcId: { type: String },
 
     // Additional Fields
     profilePhoto: { type: String, required: true },
@@ -171,7 +165,6 @@ const studentDetailsSchema = new mongoose.Schema(
           message: "Invalid mobile number format.",
         },
       },
-      relationship: String,
     },
     achievements: [
       {

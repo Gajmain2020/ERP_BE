@@ -1,7 +1,7 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
-import { Student } from "../models/student.models";
+import { Student, StudentDetails } from "../models/student.models";
 
 // Utility function for consistent error logging
 function ERROR(error: Error) {
@@ -134,8 +134,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     // Generate a JWT token
     const token = jwt.sign(
-      { id: student._id, email: student.email },
-      process.env.JWT_SECRET || "your-secret-key",
+      { id: student._id, email: student.email, name: student.name },
+      process.env.JWT_SECRET,
       { expiresIn: "3d" } // Token expires in 3 days
     );
 
@@ -147,6 +147,80 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       name: student.name,
       userType: "student",
       id: student._id,
+    });
+  } catch (error) {
+    ERROR(error);
+    res.status(500).json({
+      message: "Internal server error",
+      success: false,
+      errorMessage: error.message,
+    });
+  }
+};
+
+export const addStudentDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id; // Extract user ID from decoded token
+
+    if (!userId) {
+      res.status(401).json({
+        message: "Unauthorized. No user ID found in token.",
+        success: false,
+      });
+      return;
+    }
+
+    // Find the student by ID
+    const student = await Student.findById(userId);
+
+    if (!student) {
+      res.status(404).json({
+        message: "Student not found.",
+        success: false,
+      });
+      return;
+    }
+
+    // Check if student details are already filled
+    const isDetailsFilled = await StudentDetails.findOne({
+      studentId: userId,
+    });
+
+    if (isDetailsFilled) {
+      res.status(409).json({
+        message: "Details already filled.",
+        success: false,
+      });
+      return;
+    }
+
+    // Create new student details
+    const filledDetails = await StudentDetails.create({
+      studentId: student._id,
+      studentUrn: student.urn,
+      ...req.body,
+    });
+
+    if (!filledDetails) {
+      res.status(500).json({
+        message: "Something went wrong while saving the details.",
+        success: false,
+      });
+      return;
+    }
+
+    // Update student details filled flag
+    student.isDetailsFilled = true;
+
+    // Save updated student details
+    await student.save();
+
+    res.status(200).json({
+      message: "Details added successfully.",
+      success: true,
     });
   } catch (error) {
     ERROR(error);
