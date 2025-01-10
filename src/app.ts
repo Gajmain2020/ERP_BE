@@ -23,7 +23,7 @@ app.use("/api/v1/student", studentRoutes);
 import imageUploadRouter from "./controllers/image.controllers";
 
 // Testing image upload
-app.use("/api/images", imageUploadRouter);
+app.use("/api/upload", imageUploadRouter);
 
 // API end point example for the time begin
 // http://localhost:8000/api/v1/users/register
