@@ -15,11 +15,10 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true, limit: "32kb" }));
 app.use(cookieParser());
 
-app.get("/", (req, res) => {
-  res.send("Hello World");
-});
+//! IMPORTING ROUTES FROM DISTINCT FILES
+import studentRoutes from "./routes/student.routes";
 
-// need to work on middleware as well for authentication and routes to work properly
+app.use("/api/v1/student", studentRoutes);
 
 // API end point example for the time begin
 // http://localhost:8000/api/v1/users/register
