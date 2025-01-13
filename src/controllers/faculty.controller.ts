@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
@@ -117,7 +118,6 @@ export const addNotice = async (req: Request, res: Response): Promise<void> => {
     }
 
     // Upload the pdf to Cloudinary
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await cloudinary.v2.uploader.upload(
       (req as any).file.path,
       { resource_type: "raw" } // Cloudinary will automatically detect if it's a PDF
