@@ -2,17 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import { Student, StudentDetails } from "../models/student.models";
-
-// Utility function for consistent error logging
-function ERROR(error: Error) {
-  console.error(`
-  #################################################################
-  ERROR MESSAGE: ${error.message}
-  ***************************************************************
-  ERROR DETAILS: ${JSON.stringify(error, null, 2)}
-  #################################################################
-  `);
-}
+import { LogOutError } from "../constants";
 
 // Test function
 export const testFunction = async (
@@ -22,7 +12,7 @@ export const testFunction = async (
   try {
     res.status(200).json({ message: "Hello World", success: true });
   } catch (error) {
-    ERROR(error);
+    LogOutError(error);
     res.status(500).json({
       message: "Internal server error",
       success: false,
@@ -89,7 +79,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       success: true,
     });
   } catch (error) {
-    ERROR(error);
+    LogOutError(error);
     res.status(500).json({
       message: "Internal server error",
       success: false,
@@ -149,7 +139,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       id: student._id,
     });
   } catch (error) {
-    ERROR(error);
+    LogOutError(error);
     res.status(500).json({
       message: "Internal server error",
       success: false,
@@ -158,6 +148,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
+// Details adding by student
 export const addStudentDetails = async (
   req: Request,
   res: Response
@@ -214,7 +205,7 @@ export const addStudentDetails = async (
 
     // Update student details filled flag
     student.isDetailsFilled = true;
-
+    //! add profile image to the student as well
     // Save updated student details
     await student.save();
 
@@ -223,7 +214,7 @@ export const addStudentDetails = async (
       success: true,
     });
   } catch (error) {
-    ERROR(error);
+    LogOutError(error);
     res.status(500).json({
       message: "Internal server error",
       success: false,

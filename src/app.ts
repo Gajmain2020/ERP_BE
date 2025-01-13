@@ -17,13 +17,15 @@ app.use(cookieParser());
 
 //! IMPORTING ROUTES FROM DISTINCT FILES
 import studentRoutes from "./routes/student.routes";
+import facultyRoutes from "./routes/faculty.routes";
 
 app.use("/api/v1/student", studentRoutes);
+app.use("/api/v1/faculty", facultyRoutes);
 
-import imageUploadRouter from "./controllers/image.controllers";
+// import imageUploadRouter from "./controllers/image.controllers";
 
-// Testing image upload
-app.use("/api/upload", imageUploadRouter);
+// // Testing image upload
+// app.use("/api/upload", imageUploadRouter);
 
 // API end point example for the time begin
 // http://localhost:8000/api/v1/users/register
