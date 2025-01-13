@@ -11,6 +11,7 @@ declare module "express" {
 interface JwtPayload {
   id: string; // User ID or student ID
   email: string;
+  name: string;
 }
 
 export const authenticateStudentToken = (

@@ -10,6 +10,7 @@ declare module "express" {
 interface JwtPayload {
   id: string; // User ID or student ID
   email: string;
+  name: string;
 }
 
 export const authenticateFacultyToken = (
@@ -37,7 +38,6 @@ export const authenticateFacultyToken = (
     process.env.JWT_SECRET as string,
     (err: jwt.VerifyErrors | null, decoded: object | undefined) => {
       if (err) {
-        console.log("here");
         return res.status(401).json({
           message: "Invalid or expired token.",
           action: "logout",

@@ -2,7 +2,18 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import { Student, StudentDetails } from "../models/student.models";
-import { LogOutError } from "../constants";
+import { LogOutError } from "../utils/utils";
+
+// Utility for sending responses
+const sendResponse = (
+  res: Response,
+  status: number,
+  message: string,
+  success: boolean,
+  data?: object
+) => {
+  res.status(status).json({ message, success, ...data });
+};
 
 // Test function
 export const testFunction = async (
@@ -10,12 +21,10 @@ export const testFunction = async (
   res: Response
 ): Promise<void> => {
   try {
-    res.status(200).json({ message: "Hello World", success: true });
+    sendResponse(res, 200, "Hello World", true);
   } catch (error) {
     LogOutError(error);
-    res.status(500).json({
-      message: "Internal server error",
-      success: false,
+    sendResponse(res, 500, "Internal server error", false, {
       errorMessage: error.message,
     });
   }
@@ -26,7 +35,6 @@ export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const { name, email, department, urn, crn, semester, section } = req.body;
 
-    // Validate required fields
     if (
       !name ||
       !email ||
@@ -36,103 +44,71 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       !semester ||
       !section
     ) {
-      res.status(400).json({
-        message: "All fields are required.",
-        success: false,
-      });
-      return;
+      return sendResponse(res, 400, "All fields are required.", false);
     }
 
-    // Check if student already exists
     const existingStudent = await Student.findOne({
-      $or: [{ name }, { urn }],
+      $or: [{ email }, { urn }],
     });
-
     if (existingStudent) {
-      res.status(409).json({
-        message: "URN or email already exists in the database.",
-        success: false,
-      });
-      return;
+      return sendResponse(
+        res,
+        409,
+        "URN or email already exists in the database.",
+        false
+      );
     }
 
-    // Hash the URN as the password
     const hashedPassword = await bcrypt.hash(urn, 8);
-
-    // Save student details to the database
     const newStudent = await Student.create({
       ...req.body,
       password: hashedPassword,
     });
 
     if (!newStudent) {
-      res.status(500).json({
-        message: "Failed to register student.",
-        success: false,
-      });
-      return;
+      return sendResponse(res, 500, "Failed to register student.", false);
     }
 
-    // Respond with success
-    res.status(201).json({
-      message: `Registration of ${name} is completed successfully.`,
-      success: true,
-    });
+    sendResponse(
+      res,
+      201,
+      `Registration of ${name} is completed successfully.`,
+      true
+    );
   } catch (error) {
     LogOutError(error);
-    res.status(500).json({
-      message: "Internal server error",
-      success: false,
+    sendResponse(res, 500, "Internal server error", false, {
       errorMessage: error.message,
     });
   }
 };
 
-// Login handler with JWT implementation
+// Login handler
 export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
-    // Validate required fields
     if (!email || !password) {
-      res.status(400).json({
-        message: "Email and password are required.",
-        success: false,
-      });
-      return;
+      return sendResponse(res, 400, "Email and password are required.", false);
     }
 
-    // Check if the student exists
     const student = await Student.findOne({ email });
     if (!student) {
-      res.status(404).json({
-        message: "Invalid email or password.",
-        success: false,
-      });
-      return;
+      return sendResponse(res, 404, "Invalid email or password.", false);
     }
 
-    // Compare provided password with hashed password
     const isPasswordValid = await bcrypt.compare(password, student.password);
     if (!isPasswordValid) {
-      res.status(401).json({
-        message: "Invalid email or password.",
-        success: false,
-      });
-      return;
+      return sendResponse(res, 401, "Invalid email or password.", false);
     }
 
-    // Generate a JWT token
     const token = jwt.sign(
       { id: student._id, email: student.email, name: student.name },
       process.env.JWT_SECRET,
-      { expiresIn: "3d" } // Token expires in 3 days
+      { expiresIn: "3d" }
     );
 
-    // Respond with success and token
-    res.status(200).json({
-      message: "Login successful.",
-      success: true,
+    sendResponse(res, 200, "Login successful.", true, {
       authToken: token,
       name: student.name,
       userType: "student",
@@ -140,55 +116,39 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     });
   } catch (error) {
     LogOutError(error);
-    res.status(500).json({
-      message: "Internal server error",
-      success: false,
+    sendResponse(res, 500, "Internal server error", false, {
       errorMessage: error.message,
     });
   }
 };
 
-// Details adding by student
+// Add student details
 export const addStudentDetails = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const userId = req.user?.id; // Extract user ID from decoded token
+    const userId = req.user?.id;
 
     if (!userId) {
-      res.status(401).json({
-        message: "Unauthorized. No user ID found in token.",
-        success: false,
-      });
-      return;
+      return sendResponse(
+        res,
+        401,
+        "Unauthorized. No user ID found in token.",
+        false
+      );
     }
 
-    // Find the student by ID
     const student = await Student.findById(userId);
-
     if (!student) {
-      res.status(404).json({
-        message: "Student not found.",
-        success: false,
-      });
-      return;
+      return sendResponse(res, 404, "Student not found.", false);
     }
 
-    // Check if student details are already filled
-    const isDetailsFilled = await StudentDetails.findOne({
-      studentId: userId,
-    });
-
+    const isDetailsFilled = await StudentDetails.findOne({ studentId: userId });
     if (isDetailsFilled) {
-      res.status(409).json({
-        message: "Details already filled.",
-        success: false,
-      });
-      return;
+      return sendResponse(res, 409, "Details already filled.", false);
     }
 
-    // Create new student details
     const filledDetails = await StudentDetails.create({
       studentId: student._id,
       studentUrn: student.urn,
@@ -196,28 +156,21 @@ export const addStudentDetails = async (
     });
 
     if (!filledDetails) {
-      res.status(500).json({
-        message: "Something went wrong while saving the details.",
-        success: false,
-      });
-      return;
+      return sendResponse(
+        res,
+        500,
+        "Something went wrong while saving the details.",
+        false
+      );
     }
 
-    // Update student details filled flag
     student.isDetailsFilled = true;
-    //! add profile image to the student as well
-    // Save updated student details
     await student.save();
 
-    res.status(200).json({
-      message: "Details added successfully.",
-      success: true,
-    });
+    sendResponse(res, 200, "Details added successfully.", true);
   } catch (error) {
     LogOutError(error);
-    res.status(500).json({
-      message: "Internal server error",
-      success: false,
+    sendResponse(res, 500, "Internal server error", false, {
       errorMessage: error.message,
     });
   }

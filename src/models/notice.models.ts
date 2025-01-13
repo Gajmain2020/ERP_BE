@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { reqString } from "../constants";
+import { reqString } from "../utils/utils";
 const noticeSchema = new mongoose.Schema(
   {
     author: {
@@ -24,5 +24,5 @@ const noticeSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-const Notice = mongoose.model("Notice", noticeSchema);
+const Notice = mongoose.model("notice", noticeSchema);
 export { Notice };

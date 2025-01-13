@@ -9,7 +9,7 @@ const reqString = {
 const studentSchema = new mongoose.Schema<IStudent>(
   {
     // Ensures unique email and case insensitivity
-    crn: String,
+    crn: reqString,
     department: reqString,
     email: { ...reqString, lowercase: true, unique: true },
     // Status Flags
@@ -24,10 +24,7 @@ const studentSchema = new mongoose.Schema<IStudent>(
     name: reqString,
     // Unique Registration Number
     password: reqString,
-    section: {
-      required: true,
-      type: String,
-    },
+    section: reqString,
     semester: {
       enum: ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"],
       required: true,
@@ -35,14 +32,8 @@ const studentSchema = new mongoose.Schema<IStudent>(
     },
     // Teacher Guardian Information
     TG: {
-      teacherEmpId: {
-        type: String,
-        unique: true,
-      },
-      teacherId: {
-        type: String,
-        unique: true,
-      },
+      teacherEmpId: String,
+      teacherId: String,
       teacherName: String,
       teacherPhoneNumber: {
         type: String,
@@ -67,7 +58,7 @@ const studentDetailsSchema = new mongoose.Schema(
       unique: true,
       validate: {
         // Validates 12-digit Aadhaar number
-        message: "Invalid Aadhaar number format.",
+        message: "Invalid aadhaar number.",
         validator: (v) => /^\d{12}$/.test(v),
       },
     },
@@ -186,7 +177,7 @@ const studentDetailsSchema = new mongoose.Schema(
       type: String,
     },
     studentId: {
-      ref: "Student",
+      ref: "student",
       // References the Student schema
       required: true,
       type: mongoose.Schema.Types.ObjectId,
@@ -207,6 +198,6 @@ const studentDetailsSchema = new mongoose.Schema(
   }
 ); // Export models
 
-const Student = mongoose.model("Student", studentSchema);
-const StudentDetails = mongoose.model("StudentDetails", studentDetailsSchema);
+const Student = mongoose.model("student", studentSchema);
+const StudentDetails = mongoose.model("student detail", studentDetailsSchema);
 export { Student, StudentDetails };

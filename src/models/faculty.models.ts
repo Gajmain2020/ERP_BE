@@ -8,7 +8,6 @@ const facultySchema = new mongoose.Schema(
     bloodGroup: {
       default: "",
       enum: ["A+", "A-", "B+", "B-", "O+", "O-", "AB+", "AB-"],
-      required: true,
       type: String,
     },
     department: reqString,
@@ -17,7 +16,6 @@ const facultySchema = new mongoose.Schema(
     gender: {
       default: "",
       enum: ["male", "female", "other"],
-      required: true,
       type: String,
     },
     mobileNumber: {
@@ -39,5 +37,5 @@ const facultySchema = new mongoose.Schema(
   { timestamps: true }
 ); // Export models
 
-const Faculty = mongoose.model("Faculty", facultySchema);
+const Faculty = mongoose.model("faculty", facultySchema);
 export { Faculty };

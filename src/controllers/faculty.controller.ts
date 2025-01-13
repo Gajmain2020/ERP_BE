@@ -3,11 +3,12 @@ import bcrypt from "bcrypt";
 import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import fs from "fs";
-import Joi from "joi";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
 import cloudinary from "../utils/cloudinary.config";
-import { Error500, LogOutError } from "../constants";
+import { Error500 } from "../constants";
+import { LogOutError, sendResponse } from "../utils/utils";
+import { Assignment } from "../models/assignment.models";
 
 const removeFile = (path: string): void => {
   if (fs.existsSync(path)) {
@@ -15,41 +16,11 @@ const removeFile = (path: string): void => {
   }
 };
 
-const validateSchema = (schema: Joi.Schema, data: any) => {
-  const { error } = schema.validate(data);
-  if (error) {
-    throw new Error(error.details[0].message);
-  }
-};
-
-// Input Schemas
-const registerSchema = Joi.object({
-  name: Joi.string().required(),
-  email: Joi.string().email().required(),
-  department: Joi.string().required(),
-  empId: Joi.string().required(),
-  mobileNumber: Joi.string().required(),
-});
-
-const loginSchema = Joi.object({
-  email: Joi.string().email().required(),
-  password: Joi.string().required(),
-});
-
-const noticeSchema = Joi.object({
-  noticeId: Joi.string().required(),
-  noticeTarget: Joi.string().required(),
-  noticeTitle: Joi.string().required(),
-  noticeType: Joi.string().required(),
-});
-
 export const registerFaculty = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    validateSchema(registerSchema, req.body);
-
     const { name, email, empId } = req.body;
 
     const existingFaculty = await Faculty.findOne({
@@ -66,6 +37,8 @@ export const registerFaculty = async (
 
     const hashPassword = await bcrypt.hash(email, 8);
 
+    console.log(req.body);
+
     const faculty = await Faculty.create({
       ...req.body,
       password: hashPassword,
@@ -78,7 +51,7 @@ export const registerFaculty = async (
     });
   } catch (error) {
     LogOutError(error);
-    res.status(500).json(Error500(error));
+    return sendResponse(res, 500, "Internal server error.", false);
   }
 };
 
@@ -87,11 +60,11 @@ export const loginFaculty = async (
   res: Response
 ): Promise<void> => {
   try {
-    validateSchema(loginSchema, req.body);
-
     const { email, password } = req.body;
 
     const faculty = await Faculty.findOne({ email });
+
+    console.log(faculty);
 
     if (!faculty) {
       res.status(404).json({
@@ -102,6 +75,7 @@ export const loginFaculty = async (
     }
 
     const isPasswordValid = await bcrypt.compare(password, faculty.password);
+    console.log(isPasswordValid);
     if (!isPasswordValid) {
       res.status(401).json({
         message: "Invalid email or password.",
@@ -131,9 +105,15 @@ export const loginFaculty = async (
 
 export const addNotice = async (req: Request, res: Response): Promise<void> => {
   try {
-    validateSchema(noticeSchema, req.body);
-
     const { noticeId } = req.body;
+
+    const isNoticeIdTaken = await Assignment.findOne({
+      noticeId,
+    });
+
+    if (isNoticeIdTaken) {
+      return sendResponse(res, 409, `${noticeId} already exists.`, false);
+    }
 
     const result = await cloudinary.v2.uploader.upload((req as any).file.path, {
       resource_type: "raw",
@@ -141,6 +121,10 @@ export const addNotice = async (req: Request, res: Response): Promise<void> => {
 
     const notice = await Notice.create({
       ...req.body,
+      author: {
+        authorId: req.user.id,
+        authorName: req.user.name,
+      },
       noticeFile: result.url,
     });
 
@@ -203,5 +187,43 @@ export const editDetails = async (
   } catch (error) {
     LogOutError(error);
     res.status(500).json(Error500(error));
+  }
+};
+
+export const addAssignment = async (req: Request, res: Response) => {
+  try {
+    const { assignmentId } = req.body;
+
+    const isAssignmentIdTaken = await Assignment.findOne({
+      assignmentId,
+    });
+
+    if (isAssignmentIdTaken) {
+      return sendResponse(res, 409, `${assignmentId} already exists.`, false);
+    }
+
+    const result = await cloudinary.v2.uploader.upload((req as any).file.path, {
+      resource_type: "raw",
+    });
+
+    const notice = await Notice.create({
+      ...req.body,
+      author: {
+        authorId: req.user.id,
+        authorName: req.user.name,
+      },
+      noticeFile: result.url,
+    });
+
+    removeFile((req as any).file.path);
+
+    res.status(201).json({
+      message: `Notice with Notice ID ${assignmentId} added successfully.`,
+      success: true,
+      data: notice,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
   }
 };
