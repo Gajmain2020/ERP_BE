@@ -114,6 +114,7 @@ export const addNotice = async (req: Request, res: Response): Promise<void> => {
       res
         .status(400)
         .json({ message: "All fields are required.", success: false });
+      fs.unlinkSync((req as any).file.path);
       return;
     }
 
@@ -136,7 +137,6 @@ export const addNotice = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fs.unlinkSync((req as any).file.path);
 
     res.status(201).json({
