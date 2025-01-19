@@ -18,7 +18,9 @@ app.use(cookieParser());
 //! IMPORTING ROUTES FROM DISTINCT FILES
 import studentRoutes from "./routes/student.routes";
 import facultyRoutes from "./routes/faculty.routes";
+import adminRoutes from "./routes/admin.routes";
 
+app.use("/api/v1/admin", adminRoutes);
 app.use("/api/v1/student", studentRoutes);
 app.use("/api/v1/faculty", facultyRoutes);
 
