@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 import { sendResponse, LogOutError } from "../utils/utils";
 import { Course } from "../models/course.models";
 import { Admin } from "../models/admin.model";
+import { Student } from "../models/student.models";
 
 export const addNewCourse = async (
   req: Request,
@@ -126,5 +127,27 @@ export const registerAdmin = async (req: Request, res: Response) => {
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const fetchAllStudents = async (req: Request, res: Response) => {
+  try {
+    const { department } = req.params;
+
+    const students = await Student.find({ department });
+
+    if (!students) {
+      return sendResponse(res, 404, "No students found.", false);
+    }
+
+    return sendResponse(
+      res,
+      200,
+      "Students fetched successfully.",
+      true,
+      students
+    );
+  } catch (error) {
+    LogOutError(error);
   }
 };

@@ -4,6 +4,9 @@ import {
   register,
   testFunction,
   addStudentDetails,
+  getStudentDetails,
+  updateStudentDetails,
+  changePassword,
 } from "../controllers/student.controllers";
 import {
   authenticateStudentToken,
@@ -22,5 +25,13 @@ router
     checkAllAttributesToAddDetails,
     addStudentDetails
   );
+
+router.route("/get-details").get(authenticateStudentToken, getStudentDetails);
+router
+  .route("/update-details")
+  .patch(authenticateStudentToken, updateStudentDetails);
+router
+  .route("/change-password")
+  .patch(authenticateStudentToken, changePassword);
 
 export default router;

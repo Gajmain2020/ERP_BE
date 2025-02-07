@@ -175,3 +175,238 @@ export const addStudentDetails = async (
     });
   }
 };
+
+export const getStudentDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    const studentDetails = await StudentDetails.findOne({ studentId: userId });
+
+    if (!studentDetails) {
+      return sendResponse(res, 404, "Details not found.", false);
+    }
+
+    sendResponse(
+      res,
+      200,
+      "Details fetched successfully.",
+      true,
+      studentDetails
+    );
+  } catch (error) {
+    LogOutError(error);
+    sendResponse(res, 500, "Internal server error", false, {
+      errorMessage: error.message,
+    });
+  }
+};
+
+export const updateStudentDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const updateData = req.body;
+
+    const updatedDetails = await StudentDetails.findOneAndUpdate(
+      { studentId: userId },
+      updateData,
+      { new: true }
+    );
+
+    if (!updatedDetails) {
+      return sendResponse(res, 404, "Student details not found.", false);
+    }
+
+    sendResponse(
+      res,
+      200,
+      "Details updated successfully.",
+      true,
+      updatedDetails
+    );
+  } catch (error) {
+    LogOutError(error);
+    sendResponse(res, 500, "Internal server error", false, {
+      errorMessage: error.message,
+    });
+  }
+};
+
+export const changePassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const { oldPassword, newPassword } = req.body;
+
+    const student = await Student.findById(userId);
+    if (!student) {
+      return sendResponse(res, 404, "Student not found.", false);
+    }
+
+    const isPasswordValid = await bcrypt.compare(oldPassword, student.password);
+    if (!isPasswordValid) {
+      return sendResponse(res, 401, "Invalid old password.", false);
+    }
+
+    student.password = await bcrypt.hash(newPassword, 8);
+    await student.save();
+
+    sendResponse(res, 200, "Password changed successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    sendResponse(res, 500, "Internal server error", false, {
+      errorMessage: error.message,
+    });
+  }
+};
+// export const getStudentAttendance = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const userId = req.user?.id;
+//     const { startDate, endDate } = req.query;
+
+//     const attendance = await Attendance.find({
+//       studentId: userId,
+//       date: {
+//         $gte: startDate,
+//         $lte: endDate
+//       }
+//     });
+
+//     sendResponse(
+//       res,
+//       200,
+//       "Attendance fetched successfully.",
+//       true,
+//       attendance
+//     );
+//   } catch (error) {
+//     LogOutError(error);
+//     sendResponse(res, 500, "Internal server error", false, {
+//       errorMessage: error.message,
+//     });
+//   }
+// };
+
+// export const getStudentGrades = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const userId = req.user?.id;
+//     const { semester } = req.query;
+
+//     const grades = await Grades.find({
+//       studentId: userId,
+//       semester: semester
+//     });
+
+//     sendResponse(
+//       res,
+//       200,
+//       "Grades fetched successfully.",
+//       true,
+//       grades
+//     );
+//   } catch (error) {
+//     LogOutError(error);
+//     sendResponse(res, 500, "Internal server error", false, {
+//       errorMessage: error.message,
+//     });
+//   }
+// };
+
+// export const getStudentCourses = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const userId = req.user?.id;
+//     const { semester } = req.query;
+
+//     const enrolledCourses = await CourseEnrollment.find({
+//       studentId: userId,
+//       semester: semester
+//     }).populate('courseId');
+
+//     sendResponse(
+//       res,
+//       200,
+//       "Enrolled courses fetched successfully.",
+//       true,
+//       enrolledCourses
+//     );
+//   } catch (error) {
+//     LogOutError(error);
+//     sendResponse(res, 500, "Internal server error", false, {
+//       errorMessage: error.message,
+//     });
+//   }
+// };
+
+// export const submitAssignment = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const userId = req.user?.id;
+//     const { assignmentId, submissionContent } = req.body;
+
+//     const submission = await AssignmentSubmission.create({
+//       studentId: userId,
+//       assignmentId,
+//       submissionContent,
+//       submittedAt: new Date()
+//     });
+
+//     sendResponse(
+//       res,
+//       200,
+//       "Assignment submitted successfully.",
+//       true,
+//       submission
+//     );
+//   } catch (error) {
+//     LogOutError(error);
+//     sendResponse(res, 500, "Internal server error", false, {
+//       errorMessage: error.message,
+//     });
+//   }
+// };
+
+// export const getFeeDetails = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const userId = req.user?.id;
+//     const { semester } = req.query;
+
+//     const feeDetails = await FeeDetails.find({
+//       studentId: userId,
+//       semester: semester
+//     });
+
+//     sendResponse(
+//       res,
+//       200,
+//       "Fee details fetched successfully.",
+//       true,
+//       feeDetails
+//     );
+//   } catch (error) {
+//     LogOutError(error);
+//     sendResponse(res, 500, "Internal server error", false, {
+//       errorMessage: error.message,
+//     });
+//   }
+// };
