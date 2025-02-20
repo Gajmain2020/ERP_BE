@@ -55,6 +55,3 @@ We welcome contributions to the ERP_BE project. To contribute, please follow the
 
 For any questions or support, please contact the project maintainer at `gajmain2020@gmail.com`.
 
-## Acknowledgements
-
-We would like to thank all the contributors and the open-source community for their valuable support and contributions.
