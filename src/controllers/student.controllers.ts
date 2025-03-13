@@ -93,13 +93,18 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const student = await Student.findOne({ email });
+
     if (!student) {
       return sendResponse(res, 404, "Invalid email or password.", false);
     }
 
     const isPasswordValid = await bcrypt.compare(password, student.password);
     if (!isPasswordValid) {
-      return sendResponse(res, 401, "Invalid email or password.", false);
+      res.status(401).json({
+        success: false,
+        message: "Invalid Credentials.",
+      });
+      return;
     }
 
     const token = jwt.sign(
@@ -152,7 +157,7 @@ export const addStudentDetails = async (
     const filledDetails = await StudentDetails.create({
       studentId: student._id,
       studentUrn: student.urn,
-      ...req.body,
+      ...req.body.details,
     });
 
     if (!filledDetails) {
@@ -176,6 +181,33 @@ export const addStudentDetails = async (
   }
 };
 
+export const fetchStudentBasicDetails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+
+    console.log(userId);
+
+    const studentDetails = await Student.findById(userId).select("-password");
+
+    if (!studentDetails) {
+      return sendResponse(res, 404, "Details not found.", false);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: studentDetails,
+    });
+  } catch (error) {
+    LogOutError(error);
+    sendResponse(res, 500, "Internal server error", false, {
+      errorMessage: error.message,
+    });
+  }
+};
+
 export const getStudentDetails = async (
   req: Request,
   res: Response
@@ -183,19 +215,27 @@ export const getStudentDetails = async (
   try {
     const userId = req.user?.id;
 
+    const studentBasicDetails = await Student.findById(userId).select(
+      "-password"
+    );
+
+    if (!studentBasicDetails) {
+      sendResponse(res, 404, "Student not found.", false);
+      return;
+    }
+
     const studentDetails = await StudentDetails.findOne({ studentId: userId });
 
     if (!studentDetails) {
-      return sendResponse(res, 404, "Details not found.", false);
+      sendResponse(res, 404, "Details not found.", false);
+      return;
     }
 
-    sendResponse(
-      res,
-      200,
-      "Details fetched successfully.",
-      true,
-      studentDetails
-    );
+    sendResponse(res, 200, "Details fetched successfully.", true, {
+      moreDetails: studentDetails,
+      basicDetails: studentBasicDetails,
+    });
+    return;
   } catch (error) {
     LogOutError(error);
     sendResponse(res, 500, "Internal server error", false, {
@@ -212,6 +252,8 @@ export const updateStudentDetails = async (
     const userId = req.user?.id;
     const updateData = req.body;
 
+    console.log(updateData);
+
     const updatedDetails = await StudentDetails.findOneAndUpdate(
       { studentId: userId },
       updateData,
@@ -219,16 +261,14 @@ export const updateStudentDetails = async (
     );
 
     if (!updatedDetails) {
-      return sendResponse(res, 404, "Student details not found.", false);
+      sendResponse(res, 404, "Student details not found.", false);
+      return;
     }
-
-    sendResponse(
-      res,
-      200,
-      "Details updated successfully.",
-      true,
-      updatedDetails
-    );
+    res.status(200).json({
+      message: "Details updated successfully.",
+      data: { details: updatedDetails },
+    });
+    return;
   } catch (error) {
     LogOutError(error);
     sendResponse(res, 500, "Internal server error", false, {
@@ -266,6 +306,26 @@ export const changePassword = async (
     });
   }
 };
+
+//get Assignments api
+// export const getAssignments = async (
+//   req: Request,
+//   res: Response
+// ): Promise<void> => {
+//   try {
+//     const userId = req.user?.id;
+
+//     const assignments = await Assignment.find({
+//       studentId: userId,
+//     });
+//   } catch (error) {
+//     LogOutError(error);
+//     sendResponse(res, 500, "Internal server error", false, {
+//       errorMessage: error.message,
+//     });
+//   }
+// };
+
 // export const getStudentAttendance = async (
 //   req: Request,
 //   res: Response

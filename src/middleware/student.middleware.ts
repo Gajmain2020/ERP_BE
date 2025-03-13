@@ -73,17 +73,22 @@ export const checkAllAttributesToAddDetails = (
       "currentAddress",
       "admissionNumber",
       "abcId",
-      "profilePhoto",
+      // "profilePhoto",
       "emergencyContact",
     ];
 
-    const missingFields = requiredFields.filter((field) => !req.body[field]);
+    const missingFields = requiredFields.filter(
+      (field) => !req.body.details[field]
+    );
+
+    console.log(missingFields);
 
     if (missingFields.length) {
       res.status(400).json({
         message: "Some required fields are missing.",
         success: false,
       });
+      return;
     }
 
     next();
@@ -93,5 +98,6 @@ export const checkAllAttributesToAddDetails = (
       success: false,
       errorMessage: error instanceof Error ? error.message : "Unknown error.",
     });
+    return;
   }
 };

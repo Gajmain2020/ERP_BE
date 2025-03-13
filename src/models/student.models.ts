@@ -33,7 +33,7 @@ const studentSchema = new mongoose.Schema<IStudent>(
     // Teacher Guardian Information
     TG: {
       teacherEmpId: String,
-      teacherId: String,
+      teacherId: { type: String, default: null }, // Explicitly allow null
       teacherName: String,
       teacherPhoneNumber: {
         type: String,
@@ -43,6 +43,7 @@ const studentSchema = new mongoose.Schema<IStudent>(
         },
       },
     },
+
     urn: { ...reqString, unique: true },
   },
   {
@@ -115,10 +116,10 @@ const studentDetailsSchema = new mongoose.Schema(
         },
       },
       name: reqString,
-      relation: String,
+      relation: reqString,
     },
     gender: {
-      enum: ["male", "female", "other"],
+      enum: ["Male", "Female", "Other"],
       required: true,
       type: String,
     },
@@ -173,7 +174,6 @@ const studentDetailsSchema = new mongoose.Schema(
     },
     // Additional Fields
     profilePhoto: {
-      required: true,
       type: String,
     },
     studentId: {

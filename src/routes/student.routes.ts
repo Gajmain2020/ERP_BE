@@ -7,6 +7,7 @@ import {
   getStudentDetails,
   updateStudentDetails,
   changePassword,
+  fetchStudentBasicDetails,
 } from "../controllers/student.controllers";
 import {
   authenticateStudentToken,
@@ -26,12 +27,18 @@ router
     addStudentDetails
   );
 
+router
+  .route("/fetch-student")
+  .get(authenticateStudentToken, fetchStudentBasicDetails);
 router.route("/get-details").get(authenticateStudentToken, getStudentDetails);
+
 router
   .route("/update-details")
-  .patch(authenticateStudentToken, updateStudentDetails);
+  .post(authenticateStudentToken, updateStudentDetails);
 router
   .route("/change-password")
   .patch(authenticateStudentToken, changePassword);
+
+// router.route("/get-assignments").get(getAssignments);
 
 export default router;
