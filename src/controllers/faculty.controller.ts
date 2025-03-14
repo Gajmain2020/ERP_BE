@@ -142,47 +142,58 @@ export const addNotice = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-export const editDetails = async (
+export const updateProfile = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
-    const { empId, ...updateFields } = req.body;
+    const updatedData = req.body;
 
-    if (!empId) {
-      res.status(400).json({
-        message: "Employee ID is required to update details.",
-        success: false,
-      });
-      return;
-    }
-
-    if (Object.keys(updateFields).length === 0) {
-      res.status(400).json({
-        message: "No fields provided for updating.",
-        success: false,
-      });
-      return;
-    }
-
-    const updatedFaculty = await Faculty.findOneAndUpdate(
-      { empId },
-      { $set: updateFields },
-      { new: true }
+    // Fetch faculty details once and exclude password field
+    const existingFaculty = await Faculty.findById(req.user.id).select(
+      "-password"
     );
-
-    if (!updatedFaculty) {
-      res.status(404).json({
-        message: "Faculty not found with the given Employee ID.",
-        success: false,
-      });
+    if (!existingFaculty) {
+      res.status(404).json({ message: "No Faculty found.", success: false });
       return;
     }
+
+    // Create conditions for conflict check only if values have changed
+    const conflictConditions = [];
+    if (updatedData.empId && updatedData.empId !== existingFaculty.empId) {
+      conflictConditions.push({ empId: updatedData.empId });
+    }
+    if (updatedData.email && updatedData.email !== existingFaculty.email) {
+      conflictConditions.push({ email: updatedData.email });
+    }
+
+    // Check for conflicts only if there are conditions to check
+    if (conflictConditions.length > 0) {
+      const conflicts = await Faculty.findOne({ $or: conflictConditions });
+
+      if (conflicts) {
+        res.status(409).json({
+          message:
+            conflicts.empId === updatedData.empId
+              ? "Employee ID already exists."
+              : "Email already exists.",
+          success: false,
+        });
+        return;
+      }
+    }
+
+    // Update faculty details in a single DB call
+    const updatedFaculty = await Faculty.findByIdAndUpdate(
+      req.user.id,
+      { $set: updatedData },
+      { new: true, select: "-password" }
+    );
 
     res.status(200).json({
       message: "Faculty details updated successfully.",
       success: true,
-      data: updatedFaculty,
+      data: { updatedProfile: updatedFaculty },
     });
   } catch (error) {
     LogOutError(error);
@@ -222,6 +233,29 @@ export const addAssignment = async (req: Request, res: Response) => {
       success: true,
       data: notice,
     });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getFacultyProfile = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const faculty = await Faculty.findById(req.user.id).select("-password");
+
+    if (!faculty) {
+      sendResponse(res, 404, "Faculty not found.", false);
+      return;
+    }
+    res.status(200).json({
+      success: true,
+      message: "Faculty profile fetched successfully.",
+      data: { profile: faculty },
+    });
+    return;
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
