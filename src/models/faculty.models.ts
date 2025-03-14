@@ -26,6 +26,10 @@ const facultySchema = new mongoose.Schema(
         validator: (v) => /^\d{10}$/.test(v),
       },
     },
+    isTG: {
+      type: Boolean,
+      default: false,
+    },
     name: reqString,
     password: reqString,
     position: reqString,
