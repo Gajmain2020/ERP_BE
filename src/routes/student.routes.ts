@@ -8,7 +8,7 @@ import {
   updateStudentDetails,
   changePassword,
   fetchStudentBasicDetails,
-} from "../controllers/student.controllers";
+} from "../controllers/student.controller";
 import {
   authenticateStudentToken,
   checkAllAttributesToAddDetails,
