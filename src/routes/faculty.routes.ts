@@ -6,6 +6,7 @@ import {
   updateProfile,
   addAssignment,
   getFacultyProfile,
+  changePassword,
 } from "../controllers/faculty.controller";
 import upload from "../utils/multer.config";
 import { authenticateFacultyToken } from "../middleware/faculty.middleware";
@@ -26,6 +27,10 @@ router.route("/login").post(loginFaculty);
 router
   .route("/update-faculty-profile")
   .patch(authenticateFacultyToken, updateProfile);
+
+router
+  .route("/change-password")
+  .patch(authenticateFacultyToken, changePassword);
 
 //adding course
 router.route("/add-course").post(authenticateFacultyToken, addNewCourse);
