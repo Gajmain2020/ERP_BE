@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   changePassword,
+  enrollFaculty,
   enrollStudent,
   loginAdmin,
   registerAdmin,
@@ -20,6 +21,9 @@ router.route("/register").post(registerAdmin);
 
 // Student Related Routes
 router.route("/enroll-student").post(authenticateAdminToken, enrollStudent);
+
+// Faculty Related Routes
+router.route("/enroll-faculty").post(authenticateAdminToken, enrollFaculty);
 
 router.route("/change-password").put(authenticateAdminToken, changePassword);
 

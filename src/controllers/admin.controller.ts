@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 
 import { Admin } from "../models/admin.model";
 import { Course } from "../models/course.models";
+import { Faculty } from "../models/faculty.models";
 import { Student } from "../models/student.models";
 import { LogOutError, sendResponse } from "../utils/utils";
 
@@ -217,6 +218,47 @@ export const enrollStudent = async (req: Request, res: Response) => {
       return sendResponse(res, 500, "Internal server error.", false);
     }
     return sendResponse(res, 201, "Student enrolled successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const enrollFaculty = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const faculty = req.body;
+
+    const facultyExists = await Faculty.findOne({
+      $or: [{ email: faculty.email }, { empId: faculty.empId }],
+    });
+
+    if (facultyExists) {
+      return sendResponse(
+        res,
+        409,
+        "Faculty already exists in the database.",
+        false
+      );
+    }
+
+    const hashPassword = await bcrypt.hash(faculty.email, 8);
+
+    const newFaculty = await Faculty.create({
+      ...faculty,
+      department: admin.department,
+      password: hashPassword,
+    });
+
+    if (!newFaculty) {
+      return sendResponse(res, 500, "Internal server error.", false);
+    }
+    return sendResponse(res, 201, "Faculty enrolled successfully.", true);
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
