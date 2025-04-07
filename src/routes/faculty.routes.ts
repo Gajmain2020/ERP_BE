@@ -26,7 +26,7 @@ router.route("/register").post(registerFaculty);
 router.route("/login").post(loginFaculty);
 router
   .route("/update-faculty-profile")
-  .patch(authenticateFacultyToken, updateProfile);
+  .patch(authenticateFacultyToken, upload.single("image"), updateProfile);
 
 router
   .route("/change-password")

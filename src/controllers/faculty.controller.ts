@@ -147,7 +147,7 @@ export const updateProfile = async (
   res: Response
 ): Promise<void> => {
   try {
-    const updatedData = req.body;
+    const updatedData = JSON.parse(req.body.faculty);
 
     // Fetch faculty details once and exclude password field
     const existingFaculty = await Faculty.findById(req.user.id).select(
@@ -183,12 +183,30 @@ export const updateProfile = async (
       }
     }
 
+    let result = "";
+
+    // Upload the image to Cloudinary only if it exists
+    if ((req as any).file) {
+      const uploadResponse = await cloudinary.v2.uploader.upload(
+        (req as any).file.path
+      );
+      result = uploadResponse.secure_url;
+    }
+
     // Update faculty details in a single DB call
     const updatedFaculty = await Faculty.findByIdAndUpdate(
       req.user.id,
       { $set: updatedData },
       { new: true, select: "-password" }
     );
+
+    if (result) {
+      console.log("1");
+      updatedFaculty.profileImage = result;
+      console.log("2");
+      await updatedFaculty.save();
+      console.log("3", updatedFaculty);
+    }
 
     res.status(200).json({
       message: "Faculty details updated successfully.",
