@@ -1,11 +1,12 @@
-import { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
-import { sendResponse, LogOutError } from "../utils/utils";
-import { Course } from "../models/course.models";
 import { Admin } from "../models/admin.model";
+import { Course } from "../models/course.models";
+import { Faculty } from "../models/faculty.models";
 import { Student } from "../models/student.models";
+import { LogOutError, sendResponse } from "../utils/utils";
 
 export const addNewCourse = async (
   req: Request,
@@ -114,7 +115,7 @@ export const registerAdmin = async (req: Request, res: Response) => {
       password: hashPassword,
     });
 
-    if (registerAdmin) {
+    if (!registerAdmin) {
       return sendResponse(res, 500, "Internal server error.", false);
     }
 
@@ -149,5 +150,117 @@ export const fetchAllStudents = async (req: Request, res: Response) => {
     );
   } catch (error) {
     LogOutError(error);
+    return res.status(500).json({
+      message: "Something went wrong. Please try again.",
+      success: false,
+    });
+  }
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { oldPassword, newPassword } = req.body;
+
+    const admin = await Admin.findById(userId);
+    if (!admin) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const isPasswordValid = await bcrypt.compare(oldPassword, admin.password);
+    if (!isPasswordValid) {
+      return sendResponse(res, 401, "Invalid old password.", false);
+    }
+
+    admin.password = await bcrypt.hash(newPassword, 8);
+    await admin.save();
+
+    sendResponse(res, 200, "Password changed successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const enrollStudent = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+    const { department } = admin;
+
+    const student = req.body;
+
+    const studentExists = await Student.findOne({
+      $or: [{ email: student.email }, { urn: student.urn }],
+    });
+
+    if (studentExists) {
+      return sendResponse(
+        res,
+        409,
+        "Student already exists in the database.",
+        false
+      );
+    }
+
+    const hashPassword = await bcrypt.hash(student.email, 8);
+
+    const newStudent = await Student.create({
+      ...student,
+      department,
+      password: hashPassword,
+    });
+
+    if (!newStudent) {
+      return sendResponse(res, 500, "Internal server error.", false);
+    }
+    return sendResponse(res, 201, "Student enrolled successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const enrollFaculty = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const faculty = req.body;
+
+    const facultyExists = await Faculty.findOne({
+      $or: [{ email: faculty.email }, { empId: faculty.empId }],
+    });
+
+    if (facultyExists) {
+      return sendResponse(
+        res,
+        409,
+        "Faculty already exists in the database.",
+        false
+      );
+    }
+
+    const hashPassword = await bcrypt.hash(faculty.email, 8);
+
+    const newFaculty = await Faculty.create({
+      ...faculty,
+      department: admin.department,
+      password: hashPassword,
+    });
+
+    if (!newFaculty) {
+      return sendResponse(res, 500, "Internal server error.", false);
+    }
+    return sendResponse(res, 201, "Faculty enrolled successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
   }
 };
