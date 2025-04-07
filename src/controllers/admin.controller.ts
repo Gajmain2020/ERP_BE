@@ -1,11 +1,11 @@
-import { Request, Response } from "express";
 import bcrypt from "bcrypt";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 
-import { sendResponse, LogOutError } from "../utils/utils";
-import { Course } from "../models/course.models";
 import { Admin } from "../models/admin.model";
+import { Course } from "../models/course.models";
 import { Student } from "../models/student.models";
+import { LogOutError, sendResponse } from "../utils/utils";
 
 export const addNewCourse = async (
   req: Request,
@@ -114,7 +114,7 @@ export const registerAdmin = async (req: Request, res: Response) => {
       password: hashPassword,
     });
 
-    if (registerAdmin) {
+    if (!registerAdmin) {
       return sendResponse(res, 500, "Internal server error.", false);
     }
 
