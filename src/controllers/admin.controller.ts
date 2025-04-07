@@ -149,5 +149,34 @@ export const fetchAllStudents = async (req: Request, res: Response) => {
     );
   } catch (error) {
     LogOutError(error);
+    return res.status(500).json({
+      message: "Something went wrong. Please try again.",
+      success: false,
+    });
+  }
+};
+
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { oldPassword, newPassword } = req.body;
+
+    const faculty = await Admin.findById(userId);
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const isPasswordValid = await bcrypt.compare(oldPassword, faculty.password);
+    if (!isPasswordValid) {
+      return sendResponse(res, 401, "Invalid old password.", false);
+    }
+
+    faculty.password = await bcrypt.hash(newPassword, 8);
+    await faculty.save();
+
+    sendResponse(res, 200, "Password changed successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
   }
 };
