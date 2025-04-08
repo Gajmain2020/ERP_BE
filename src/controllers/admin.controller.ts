@@ -264,3 +264,75 @@ export const enrollFaculty = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const enrollMultipleStudents = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+
+    if (!admin || !admin.department) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { students } = req.body;
+
+    if (!students || !students.length) {
+      return sendResponse(res, 400, "No students found.", false);
+    }
+
+    // Filter out invalid students
+    interface StudentData {
+      email: string;
+      urn: string;
+    }
+
+    const validStudents = students.filter((s: StudentData) => s.email && s.urn);
+    if (!validStudents.length) {
+      return sendResponse(res, 400, "No valid student data found.", false);
+    }
+
+    // Fetch existing students based on email or urn
+    const existing = await Student.find({
+      $or: validStudents.flatMap((s: StudentData) => [
+        { email: s.email },
+        { urn: s.urn },
+      ]),
+    });
+
+    const existingEmails = new Set(existing.map((s) => s.email));
+    const existingURNs = new Set(existing.map((s) => s.urn));
+
+    // Filter out duplicates
+    const newStudents = validStudents.filter(
+      (s: StudentData) =>
+        !existingEmails.has(s.email) && !existingURNs.has(s.urn)
+    );
+
+    const studentDocs = await Promise.all(
+      newStudents.map(async (student: StudentData) => {
+        const hashPassword = await bcrypt.hash(student.email, 8);
+        return {
+          ...student,
+          department: admin.department,
+          password: hashPassword,
+        };
+      })
+    );
+
+    // Bulk insert
+    const inserted = await Student.insertMany(studentDocs);
+
+    const addedCount = inserted.length;
+    const failedCount = students.length - addedCount;
+
+    return sendResponse(
+      res,
+      201,
+      `${addedCount} successfully enrolled out of ${students.length}, ${failedCount} failed.`,
+      true
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
