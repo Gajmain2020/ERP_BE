@@ -274,7 +274,7 @@ export const enrollMultipleStudents = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "Admin not found.", false);
     }
 
-    const { students } = req.body;
+    const students = req.body;
 
     if (!students || !students.length) {
       return sendResponse(res, 400, "No students found.", false);
