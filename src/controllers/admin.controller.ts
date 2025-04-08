@@ -352,17 +352,17 @@ export const enrollMultipleFaculties = async (req: Request, res: Response) => {
       return sendResponse(res, 400, "No faculties found.", false);
     }
 
-    // Filter out invalid faculties
     interface FacultiesData {
       email: string;
       empId: string;
     }
 
+    // Filter out invalid faculties
     const validFaculties = faculties.filter(
       (s: FacultiesData) => s.email && s.empId
     );
     if (!validFaculties.length) {
-      return sendResponse(res, 400, "No valid student data found.", false);
+      return sendResponse(res, 400, "No valid faculty data found.", false);
     }
 
     // Fetch existing faculties based on email or urn
