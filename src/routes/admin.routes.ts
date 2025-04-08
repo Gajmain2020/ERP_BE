@@ -28,6 +28,9 @@ router
 
 // Faculty Related Routes
 router.route("/enroll-faculty").post(authenticateAdminToken, enrollFaculty);
+router
+  .route("/enroll-multiple-faculty")
+  .post(authenticateAdminToken, enrollMultipleFaculty);
 
 router.route("/change-password").put(authenticateAdminToken, changePassword);
 
