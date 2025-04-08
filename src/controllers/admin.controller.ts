@@ -8,49 +8,6 @@ import { Faculty } from "../models/faculty.models";
 import { Student } from "../models/student.models";
 import { LogOutError, sendResponse } from "../utils/utils";
 
-export const addNewCourse = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { courseCode } = req.body;
-
-    const courseExisting = await Course.findOne({ courseCode });
-
-    if (courseExisting) {
-      return sendResponse(
-        res,
-        409,
-        "Course already exist with given course code.",
-        false
-      );
-    }
-
-    const saveCourse = await Course.create({
-      ...req.body,
-    });
-
-    if (!saveCourse) {
-      return sendResponse(
-        res,
-        500,
-        "Something went wrong please try again.",
-        false
-      );
-    }
-
-    return sendResponse(
-      res,
-      201,
-      `Course ${req.body.courseShortName} successfully added.`,
-      true
-    );
-  } catch (error) {
-    LogOutError(error);
-    return sendResponse(res, 500, "Internal server error.", false);
-  }
-};
-
 export const loginAdmin = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -405,6 +362,44 @@ export const enrollMultipleFaculties = async (req: Request, res: Response) => {
       `${addedCount} successfully enrolled out of ${faculties.length}, ${failedCount} failed.`,
       true
     );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const addNewCourse = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const course = req.body;
+
+    const courseExists = await Course.findOne({
+      $or: [{ courseCode: course.courseCode }],
+    });
+
+    if (courseExists) {
+      return sendResponse(
+        res,
+        409,
+        "Course already exists in the database.",
+        false
+      );
+    }
+
+    const newCourse = await Course.create({
+      ...course,
+      department: admin.department,
+    });
+
+    if (!newCourse) {
+      return sendResponse(res, 500, "Internal server error.", false);
+    }
+    return sendResponse(res, 201, "Course added successfully.", true);
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);

@@ -5,7 +5,15 @@ const courseSchema = new mongoose.Schema(
     courseCode: { ...reqString, unique: true },
     courseName: reqString,
     courseShortName: reqString,
-    courseType: { ...reqString, enum: ["fe", "core", "prof"] },
+    courseType: {
+      ...reqString,
+      enum: [
+        "First Year Subject",
+        "Core Subject",
+        "Prof. Elective",
+        "Open Elective",
+      ],
+    },
     department: reqString,
     semester: {
       ...reqString,

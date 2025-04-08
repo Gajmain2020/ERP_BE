@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  addNewCourse,
   changePassword,
   enrollFaculty,
   enrollMultipleFaculties,
@@ -17,9 +18,10 @@ router.route("/").get((req, res) => {
   res.send("Hello World");
 });
 
+// Admin Related Routes
 router.route("/login").post(loginAdmin);
-
 router.route("/register").post(registerAdmin);
+router.route("/change-password").put(authenticateAdminToken, changePassword);
 
 // Student Related Routes
 router.route("/enroll-student").post(authenticateAdminToken, enrollStudent);
@@ -33,6 +35,7 @@ router
   .route("/enroll-multiple-faculties")
   .post(authenticateAdminToken, enrollMultipleFaculties);
 
-router.route("/change-password").put(authenticateAdminToken, changePassword);
+// Course Related Routes
+router.route("/add-course").post(authenticateAdminToken, addNewCourse);
 
 export default router;
