@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   changePassword,
   enrollFaculty,
+  enrollMultipleStudents,
   enrollStudent,
   loginAdmin,
   registerAdmin,
@@ -21,6 +22,9 @@ router.route("/register").post(registerAdmin);
 
 // Student Related Routes
 router.route("/enroll-student").post(authenticateAdminToken, enrollStudent);
+router
+  .route("/enroll-multiple-students")
+  .post(authenticateAdminToken, enrollMultipleStudents);
 
 // Faculty Related Routes
 router.route("/enroll-faculty").post(authenticateAdminToken, enrollFaculty);
