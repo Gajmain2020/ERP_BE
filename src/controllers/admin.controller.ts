@@ -336,3 +336,77 @@ export const enrollMultipleStudents = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const enrollMultipleFaculties = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+
+    if (!admin || !admin.department) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const faculties = req.body;
+
+    if (!faculties || !faculties.length) {
+      return sendResponse(res, 400, "No faculties found.", false);
+    }
+
+    interface FacultiesData {
+      email: string;
+      empId: string;
+    }
+
+    // Filter out invalid faculties
+    const validFaculties = faculties.filter(
+      (s: FacultiesData) => s.email && s.empId
+    );
+    if (!validFaculties.length) {
+      return sendResponse(res, 400, "No valid faculty data found.", false);
+    }
+
+    // Fetch existing faculties based on email or urn
+    const existing = await Faculty.find({
+      $or: validFaculties.flatMap((s: FacultiesData) => [
+        { email: s.email },
+        { empId: s.empId },
+      ]),
+    });
+
+    const existingEmails = new Set(existing.map((s) => s.email));
+    const existingEmpIds = new Set(existing.map((s) => s.empId));
+
+    // Filter out duplicates
+    const newFaculties = validFaculties.filter(
+      (s: FacultiesData) =>
+        !existingEmails.has(s.email) && !existingEmpIds.has(s.empId)
+    );
+
+    const facultyDocs = await Promise.all(
+      newFaculties.map(async (faculty: FacultiesData) => {
+        const hashPassword = await bcrypt.hash(faculty.email, 8);
+        return {
+          ...faculty,
+          department: admin.department,
+          password: hashPassword,
+        };
+      })
+    );
+
+    // Bulk insert
+    const inserted = await Faculty.insertMany(facultyDocs);
+
+    const addedCount = inserted.length;
+    const failedCount = faculties.length - addedCount;
+
+    return sendResponse(
+      res,
+      201,
+      `${addedCount} successfully enrolled out of ${faculties.length}, ${failedCount} failed.`,
+      true
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
