@@ -420,13 +420,9 @@ export const getAllCourses = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "No courses found.", false);
     }
 
-    return sendResponse(
-      res,
-      200,
-      "Courses fetched successfully.",
-      true,
-      courses
-    );
+    return sendResponse(res, 200, "Courses fetched successfully.", true, {
+      courses,
+    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
