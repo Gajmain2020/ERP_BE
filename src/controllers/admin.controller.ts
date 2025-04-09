@@ -405,3 +405,30 @@ export const addNewCourse = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const getAllCourses = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const courses = await Course.find({ department: admin.department });
+
+    if (!courses) {
+      return sendResponse(res, 404, "No courses found.", false);
+    }
+
+    return sendResponse(
+      res,
+      200,
+      "Courses fetched successfully.",
+      true,
+      courses
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};

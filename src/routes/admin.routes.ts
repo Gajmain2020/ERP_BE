@@ -6,6 +6,7 @@ import {
   enrollMultipleFaculties,
   enrollMultipleStudents,
   enrollStudent,
+  getAllCourses,
   loginAdmin,
   registerAdmin,
 } from "../controllers/admin.controller";
@@ -37,5 +38,6 @@ router
 
 // Course Related Routes
 router.route("/add-course").post(authenticateAdminToken, addNewCourse);
+router.route("/get-courses").get(authenticateAdminToken, getAllCourses);
 
 export default router;
