@@ -506,7 +506,7 @@ export const assignCourseToFaculty = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "Admin not found.", false);
     }
 
-    const { courseId, facultyId } = req.body;
+    const { courseId, facultyId } = req.query;
 
     const course = await Course.findById(courseId);
     if (!course) {
@@ -533,10 +533,7 @@ export const assignCourseToFaculty = async (req: Request, res: Response) => {
     }
 
     // Assign the course to the faculty
-    course.takenBy.push({
-      facultyId: faculty._id,
-      facultyName: faculty.name,
-    });
+    course.takenBy.push({ facultyId });
 
     await course.save();
 

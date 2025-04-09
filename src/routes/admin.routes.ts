@@ -47,7 +47,7 @@ router
   .get(authenticateAdminToken, getFacultiesByCourse);
 router.route("/get-faculties").get(authenticateAdminToken, getAllFaculties);
 router
-  .route("assign-teacher-to-course")
+  .route("/assign-teacher-to-course")
   .put(authenticateAdminToken, assignCourseToFaculty);
 
 export default router;
