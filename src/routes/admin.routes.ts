@@ -1,13 +1,18 @@
 import { Router } from "express";
 import {
   addNewCourse,
+  assignCourseToFaculty,
   changePassword,
   enrollFaculty,
   enrollMultipleFaculties,
   enrollMultipleStudents,
   enrollStudent,
+  getAllCourses,
+  getAllFaculties,
+  getFacultiesByCourse,
   loginAdmin,
   registerAdmin,
+  removeFacultyFromCourse,
 } from "../controllers/admin.controller";
 import { authenticateAdminToken } from "../middleware/admin.middleware";
 
@@ -37,5 +42,16 @@ router
 
 // Course Related Routes
 router.route("/add-course").post(authenticateAdminToken, addNewCourse);
+router.route("/get-courses").get(authenticateAdminToken, getAllCourses);
+router
+  .route("/get-faculty-by-course")
+  .get(authenticateAdminToken, getFacultiesByCourse);
+router.route("/get-faculties").get(authenticateAdminToken, getAllFaculties);
+router
+  .route("/assign-teacher-to-course")
+  .put(authenticateAdminToken, assignCourseToFaculty);
+router
+  .route("/remove-faculty-from-course")
+  .put(authenticateAdminToken, removeFacultyFromCourse);
 
 export default router;

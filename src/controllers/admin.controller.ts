@@ -405,3 +405,197 @@ export const addNewCourse = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const getAllCourses = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const courses = await Course.find({ department: admin.department });
+
+    if (!courses) {
+      return sendResponse(res, 404, "No courses found.", false);
+    }
+
+    return sendResponse(res, 200, "Courses fetched successfully.", true, {
+      courses,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getFacultiesByCourse = async (req: Request, res: Response) => {
+  try {
+    console.log("Hello world");
+
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { courseId } = req.query;
+
+    const course = await Course.findById(courseId).populate({
+      path: "takenBy.facultyId",
+      select: "name email", // Only include name and email
+    });
+
+    if (!course) {
+      return sendResponse(res, 404, "Course not found.", false);
+    }
+
+    const faculties = course.takenBy.map((t) => {
+      const faculty = t.facultyId as unknown as {
+        _id: string;
+        name: string;
+        email: string;
+      };
+
+      return {
+        id: faculty._id,
+        name: faculty.name,
+        email: faculty.email,
+      };
+    });
+
+    return sendResponse(res, 200, "Faculties fetched successfully.", true, {
+      faculties,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getAllFaculties = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const faculties = await Faculty.find({
+      department: admin.department,
+    }).select("_id name email");
+
+    if (!faculties) {
+      return sendResponse(res, 404, "No faculties found.", false);
+    }
+
+    return sendResponse(res, 200, "Faculties fetched successfully.", true, {
+      faculties,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const assignCourseToFaculty = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { courseId, facultyId } = req.query;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return sendResponse(res, 404, "Course not found.", false);
+    }
+
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    // Check if the faculty is already assigned to the course
+    const isAssigned = course.takenBy.some(
+      (t) => t.facultyId.toString() === faculty._id.toString()
+    );
+
+    if (isAssigned) {
+      return sendResponse(
+        res,
+        409,
+        "Faculty already assigned to this course.",
+        false
+      );
+    }
+
+    // Assign the course to the faculty
+    course.takenBy.push({ facultyId });
+
+    await course.save();
+
+    return sendResponse(
+      res,
+      200,
+      "Course assigned to faculty successfully.",
+      true
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const removeFacultyFromCourse = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { courseId, facultyId } = req.query;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return sendResponse(res, 404, "Course not found.", false);
+    }
+
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    // Check if the faculty is already assigned to the course
+    const isAssigned = course.takenBy.some(
+      (t) => t.facultyId.toString() === faculty._id.toString()
+    );
+
+    if (!isAssigned) {
+      return sendResponse(
+        res,
+        409,
+        "Faculty is not assigned to this course.",
+        false
+      );
+    }
+
+    // Clean removal using Mongoose's built-in `pull`
+    course.takenBy.pull({ facultyId: faculty._id });
+
+    await course.save();
+
+    return sendResponse(
+      res,
+      200,
+      "Faculty removed from course successfully.",
+      true
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
