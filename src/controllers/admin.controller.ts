@@ -548,3 +548,54 @@ export const assignCourseToFaculty = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const removeFacultyFromCourse = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { courseId, facultyId } = req.query;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return sendResponse(res, 404, "Course not found.", false);
+    }
+
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    // Check if the faculty is already assigned to the course
+    const isAssigned = course.takenBy.some(
+      (t) => t.facultyId.toString() === faculty._id.toString()
+    );
+
+    if (!isAssigned) {
+      return sendResponse(
+        res,
+        409,
+        "Faculty is not assigned to this course.",
+        false
+      );
+    }
+
+    // Clean removal using Mongoose's built-in `pull`
+    course.takenBy.pull({ facultyId: faculty._id });
+
+    await course.save();
+
+    return sendResponse(
+      res,
+      200,
+      "Faculty removed from course successfully.",
+      true
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};

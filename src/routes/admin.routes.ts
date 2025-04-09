@@ -12,6 +12,7 @@ import {
   getFacultiesByCourse,
   loginAdmin,
   registerAdmin,
+  removeFacultyFromCourse,
 } from "../controllers/admin.controller";
 import { authenticateAdminToken } from "../middleware/admin.middleware";
 
@@ -49,5 +50,8 @@ router.route("/get-faculties").get(authenticateAdminToken, getAllFaculties);
 router
   .route("/assign-teacher-to-course")
   .put(authenticateAdminToken, assignCourseToFaculty);
+router
+  .route("/remove-faculty-from-course")
+  .put(authenticateAdminToken, removeFacultyFromCourse);
 
 export default router;
