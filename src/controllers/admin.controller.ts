@@ -481,7 +481,9 @@ export const getAllFaculties = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "Admin not found.", false);
     }
 
-    const faculties = await Faculty.find({ department: admin.department });
+    const faculties = await Faculty.find({
+      department: admin.department,
+    }).select("_id name email");
 
     if (!faculties) {
       return sendResponse(res, 404, "No faculties found.", false);

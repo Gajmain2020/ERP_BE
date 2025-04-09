@@ -7,6 +7,7 @@ import {
   enrollMultipleStudents,
   enrollStudent,
   getAllCourses,
+  getAllFaculties,
   getFacultiesByCourse,
   loginAdmin,
   registerAdmin,
@@ -43,5 +44,6 @@ router.route("/get-courses").get(authenticateAdminToken, getAllCourses);
 router
   .route("/get-faculty-by-course")
   .get(authenticateAdminToken, getFacultiesByCourse);
+router.route("/get-faculties").get(authenticateAdminToken, getAllFaculties);
 
 export default router;
