@@ -483,7 +483,7 @@ export const getAllFaculties = async (req: Request, res: Response) => {
 
     const faculties = await Faculty.find({
       department: admin.department,
-    }).select("_id name email isTG position");
+    }).select("_id name email empId isTG position");
 
     if (!faculties) {
       return sendResponse(res, 404, "No faculties found.", false);
