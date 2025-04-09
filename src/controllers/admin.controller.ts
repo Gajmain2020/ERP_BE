@@ -489,13 +489,9 @@ export const getAllFaculties = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "No faculties found.", false);
     }
 
-    return sendResponse(
-      res,
-      200,
-      "Faculties fetched successfully.",
-      true,
-      faculties
-    );
+    return sendResponse(res, 200, "Faculties fetched successfully.", true, {
+      faculties,
+    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
