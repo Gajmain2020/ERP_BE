@@ -428,3 +428,74 @@ export const getAllCourses = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const getFacultiesByCourse = async (req: Request, res: Response) => {
+  try {
+    console.log("Hello world");
+
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { courseId } = req.query;
+
+    const course = await Course.findById(courseId).populate({
+      path: "takenBy.facultyId",
+      select: "name email", // Only include name and email
+    });
+
+    if (!course) {
+      return sendResponse(res, 404, "Course not found.", false);
+    }
+
+    const faculties = course.takenBy.map((t) => {
+      const faculty = t.facultyId as unknown as {
+        _id: string;
+        name: string;
+        email: string;
+      };
+
+      return {
+        id: faculty._id,
+        name: faculty.name,
+        email: faculty.email,
+      };
+    });
+
+    return sendResponse(res, 200, "Faculties fetched successfully.", true, {
+      faculties,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getAllFaculties = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const faculties = await Faculty.find({ department: admin.department });
+
+    if (!faculties) {
+      return sendResponse(res, 404, "No faculties found.", false);
+    }
+
+    return sendResponse(
+      res,
+      200,
+      "Faculties fetched successfully.",
+      true,
+      faculties
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
