@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addNewCourse,
   assignCourseToFaculty,
+  assignTg,
   changePassword,
   enrollFaculty,
   enrollMultipleFaculties,
@@ -13,6 +14,7 @@ import {
   loginAdmin,
   registerAdmin,
   removeFacultyFromCourse,
+  unassignTg,
 } from "../controllers/admin.controller";
 import { authenticateAdminToken } from "../middleware/admin.middleware";
 
@@ -53,5 +55,9 @@ router
 router
   .route("/remove-faculty-from-course")
   .put(authenticateAdminToken, removeFacultyFromCourse);
+
+// TG Related Router
+router.route("/assign-tg").put(authenticateAdminToken, assignTg);
+router.route("/unassign-tg").put(authenticateAdminToken, unassignTg);
 
 export default router;

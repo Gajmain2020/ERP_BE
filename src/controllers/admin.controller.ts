@@ -483,7 +483,7 @@ export const getAllFaculties = async (req: Request, res: Response) => {
 
     const faculties = await Faculty.find({
       department: admin.department,
-    }).select("_id name email");
+    }).select("_id name email empId isTG position");
 
     if (!faculties) {
       return sendResponse(res, 404, "No faculties found.", false);
@@ -594,6 +594,61 @@ export const removeFacultyFromCourse = async (req: Request, res: Response) => {
       "Faculty removed from course successfully.",
       true
     );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const assignTg = async (req: Request, res: Response) => {
+  try {
+    const { facultyId } = req.query;
+
+    const faculty = await Faculty.findById(facultyId);
+
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    if (faculty.isTG) {
+      return sendResponse(
+        res,
+        403,
+        "Faculty is already assigned as TG.",
+        false
+      );
+    }
+
+    faculty.isTG = true;
+
+    await faculty.save();
+
+    return sendResponse(res, 200, "TG assigned successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const unassignTg = async (req: Request, res: Response) => {
+  try {
+    const { facultyId } = req.query;
+
+    const faculty = await Faculty.findById(facultyId);
+
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    if (!faculty.isTG) {
+      return sendResponse(res, 403, "Faculty is not assigned as TG.", false);
+    }
+
+    faculty.isTG = false;
+
+    await faculty.save();
+
+    return sendResponse(res, 200, "TG unassigned successfully.", true);
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
