@@ -629,3 +629,28 @@ export const assignTg = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const unassignTg = async (req: Request, res: Response) => {
+  try {
+    const { facultyId } = req.query;
+
+    const faculty = await Faculty.findById(facultyId);
+
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    if (!faculty.isTG) {
+      return sendResponse(res, 403, "Faculty is not assigned as TG.", false);
+    }
+
+    faculty.isTG = false;
+
+    await faculty.save();
+
+    return sendResponse(res, 200, "TG unassigned successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};

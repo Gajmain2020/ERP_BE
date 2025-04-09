@@ -14,6 +14,7 @@ import {
   loginAdmin,
   registerAdmin,
   removeFacultyFromCourse,
+  unassignTg,
 } from "../controllers/admin.controller";
 import { authenticateAdminToken } from "../middleware/admin.middleware";
 
@@ -57,5 +58,6 @@ router
 
 // TG Related Router
 router.route("/assign-tg").put(authenticateAdminToken, assignTg);
+router.route("/unassign-tg").put(authenticateAdminToken, unassignTg);
 
 export default router;
