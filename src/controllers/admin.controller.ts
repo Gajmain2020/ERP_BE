@@ -724,7 +724,9 @@ export const searchStudent = async (req: Request, res: Response) => {
       filter.section = section;
     }
 
-    const students = await Student.find(filter);
+    const students = await Student.find(filter).select(
+      "_id name urn crn section email TG"
+    );
 
     if (!students || students.length === 0) {
       return sendResponse(res, 404, "No students found.", false);
