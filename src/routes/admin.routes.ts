@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   addNewCourse,
   assignCourseToFaculty,
+  assignStudentToTG,
   assignTg,
   changePassword,
   enrollFaculty,
@@ -14,6 +15,7 @@ import {
   loginAdmin,
   registerAdmin,
   removeFacultyFromCourse,
+  searchStudent,
   unassignTg,
 } from "../controllers/admin.controller";
 import { authenticateAdminToken } from "../middleware/admin.middleware";
@@ -35,6 +37,7 @@ router.route("/enroll-student").post(authenticateAdminToken, enrollStudent);
 router
   .route("/enroll-multiple-students")
   .post(authenticateAdminToken, enrollMultipleStudents);
+router.route("/search-student").get(authenticateAdminToken, searchStudent);
 
 // Faculty Related Routes
 router.route("/enroll-faculty").post(authenticateAdminToken, enrollFaculty);
@@ -59,5 +62,8 @@ router
 // TG Related Router
 router.route("/assign-tg").put(authenticateAdminToken, assignTg);
 router.route("/unassign-tg").put(authenticateAdminToken, unassignTg);
+router
+  .route("/assign-student-to-tg")
+  .put(authenticateAdminToken, assignStudentToTG);
 
 export default router;

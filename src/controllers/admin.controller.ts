@@ -700,3 +700,41 @@ export const assignStudentToTG = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const searchStudent = async (req: Request, res: Response) => {
+  try {
+    const { searchString, semester, section } = req.query;
+
+    // Build dynamic filter
+    const filter: any = {};
+
+    if (searchString && searchString !== "") {
+      filter.$or = [
+        { name: { $regex: searchString, $options: "i" } },
+        { urn: { $regex: searchString, $options: "i" } },
+        { email: { $regex: searchString, $options: "i" } },
+      ];
+    }
+
+    if (semester && semester !== "") {
+      filter.semester = semester;
+    }
+
+    if (section && section !== "") {
+      filter.section = section;
+    }
+
+    const students = await Student.find(filter);
+
+    if (!students || students.length === 0) {
+      return sendResponse(res, 404, "No students found.", false);
+    }
+
+    return sendResponse(res, 200, "Students fetched successfully.", true, {
+      students,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
