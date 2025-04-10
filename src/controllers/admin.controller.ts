@@ -654,3 +654,49 @@ export const unassignTg = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const assignStudentToTG = async (req: Request, res: Response) => {
+  try {
+    const students: { studentId: string }[] = req.body;
+    const facultyId = req.query.facultyId as string;
+
+    if (!students || students.length === 0) {
+      return sendResponse(res, 400, "No students found.", false);
+    }
+
+    if (!facultyId) {
+      return sendResponse(res, 400, "Faculty ID is required.", false);
+    }
+
+    const faculty = await Faculty.findOne({ isTG: true, _id: facultyId });
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const studentIds = students.map((s) => s.studentId);
+    const foundStudents = await Student.find({ _id: { $in: studentIds } });
+
+    const updates = foundStudents.map((student) => {
+      student.TG = {
+        facultyId: faculty._id.toString(),
+        facultyName: faculty.name,
+      };
+      return student.save();
+    });
+
+    const accepted = updates.length;
+    const rejected = students.length - accepted;
+
+    await Promise.all(updates);
+
+    return sendResponse(
+      res,
+      200,
+      `${accepted} students assigned to TG successfully, ${rejected} failed.`,
+      true
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
