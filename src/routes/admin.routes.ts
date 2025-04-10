@@ -12,6 +12,7 @@ import {
   getAllCourses,
   getAllFaculties,
   getFacultiesByCourse,
+  getTg,
   loginAdmin,
   registerAdmin,
   removeFacultyFromCourse,
@@ -65,5 +66,6 @@ router.route("/unassign-tg").put(authenticateAdminToken, unassignTg);
 router
   .route("/assign-student-to-tg")
   .put(authenticateAdminToken, assignStudentToTG);
+router.route("/get-tg").get(authenticateAdminToken, getTg);
 
 export default router;

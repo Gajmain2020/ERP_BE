@@ -740,3 +740,26 @@ export const searchStudent = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const getTg = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const tg = await Faculty.find({ department: admin.department, isTG: true });
+
+    if (!tg) {
+      return sendResponse(res, 404, "No TG found.", false);
+    }
+
+    return sendResponse(res, 200, "TG fetched successfully.", true, {
+      tg,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
