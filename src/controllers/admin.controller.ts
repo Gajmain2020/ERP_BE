@@ -749,7 +749,10 @@ export const getTg = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "Admin not found.", false);
     }
 
-    const tg = await Faculty.find({ department: admin.department, isTG: true });
+    const tg = await Faculty.find({
+      department: admin.department,
+      isTG: true,
+    }).select("_id name email position ");
 
     if (!tg) {
       return sendResponse(res, 404, "No TG found.", false);
