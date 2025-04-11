@@ -729,6 +729,8 @@ export const assignStudentToTG = async (req: Request, res: Response) => {
       facultyName: faculty.name,
     };
 
+    await student.save();
+
     return sendResponse(res, 200, "Student assigned to TG successfully.", true);
   } catch (error) {
     LogOutError(error);
