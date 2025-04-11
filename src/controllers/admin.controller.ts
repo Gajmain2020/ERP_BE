@@ -655,44 +655,44 @@ export const unassignTg = async (req: Request, res: Response) => {
   }
 };
 
-export const assignStudentToTG = async (req: Request, res: Response) => {
+export const assignStudentsToTG = async (req: Request, res: Response) => {
   try {
     const students: { studentId: string }[] = req.body;
-    const facultyId = req.query.facultyId as string;
+    const tgId = req.query.tgId as string;
 
-    if (!students || students.length === 0) {
+    if (!students?.length) {
       return sendResponse(res, 400, "No students found.", false);
     }
 
-    if (!facultyId) {
+    if (!tgId) {
       return sendResponse(res, 400, "Faculty ID is required.", false);
     }
 
-    const faculty = await Faculty.findOne({ isTG: true, _id: facultyId });
+    const faculty = await Faculty.findOne({ isTG: true, _id: tgId });
     if (!faculty) {
       return sendResponse(res, 404, "Faculty not found.", false);
     }
 
-    const studentIds = students.map((s) => s.studentId);
-    const foundStudents = await Student.find({ _id: { $in: studentIds } });
+    const foundStudents = await Student.find({ _id: { $in: students } });
 
-    const updates = foundStudents.map((student) => {
-      student.TG = {
-        facultyId: faculty._id.toString(),
-        facultyName: faculty.name,
-      };
-      return student.save();
-    });
+    if (!foundStudents.length) {
+      return sendResponse(res, 404, "No valid students found.", false);
+    }
 
-    const accepted = updates.length;
-    const rejected = students.length - accepted;
-
-    await Promise.all(updates);
+    await Promise.all(
+      foundStudents.map((student) => {
+        student.TG = {
+          facultyId: faculty._id.toString(),
+          facultyName: faculty.name,
+        };
+        return student.save();
+      })
+    );
 
     return sendResponse(
       res,
       200,
-      `${accepted} students assigned to TG successfully, ${rejected} failed.`,
+      `${foundStudents.length} students assigned to TG successfully.`,
       true
     );
   } catch (error) {

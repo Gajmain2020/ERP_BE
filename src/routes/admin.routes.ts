@@ -2,7 +2,7 @@ import { Router } from "express";
 import {
   addNewCourse,
   assignCourseToFaculty,
-  assignStudentToTG,
+  assignStudentsToTG,
   assignTg,
   changePassword,
   enrollFaculty,
@@ -64,8 +64,8 @@ router
 router.route("/assign-tg").put(authenticateAdminToken, assignTg);
 router.route("/unassign-tg").put(authenticateAdminToken, unassignTg);
 router
-  .route("/assign-student-to-tg")
-  .put(authenticateAdminToken, assignStudentToTG);
+  .route("/assign-students-to-tg")
+  .put(authenticateAdminToken, assignStudentsToTG);
 router.route("/get-tg").get(authenticateAdminToken, getTg);
 
 export default router;
