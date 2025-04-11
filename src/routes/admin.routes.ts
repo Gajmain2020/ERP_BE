@@ -15,12 +15,14 @@ import {
   getFacultiesByCourse,
   getTg,
   loginAdmin,
+  publishNotice,
   registerAdmin,
   removeFacultyFromCourse,
   searchStudent,
   unassignTg,
 } from "../controllers/admin.controller";
 import { authenticateAdminToken } from "../middleware/admin.middleware";
+import upload from "../utils/multer.config";
 
 const router = Router();
 
@@ -72,4 +74,8 @@ router
   .put(authenticateAdminToken, assignStudentToTG);
 router.route("/get-tg").get(authenticateAdminToken, getTg);
 
+// Notice Related Routes
+router
+  .route("/publish-notice")
+  .post(authenticateAdminToken, upload.single("pdf"), publishNotice);
 export default router;

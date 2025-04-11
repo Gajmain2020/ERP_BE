@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import express from "express";
 import fs from "fs";
-import upload from "../utils/multer.config";
-import cloudinary from "../utils/cloudinary.config";
 import { Image, PDF } from "../models/images.models";
+import cloudinary from "../utils/cloudinary.config";
+import upload from "../utils/multer.config";
 
 const router = express.Router();
 
@@ -75,15 +75,10 @@ router.post(
         { resource_type: "raw" } // Cloudinary will automatically detect if it's a PDF
       );
 
-      // Save the PDF URL and title in the database
       const newPdf = new PDF({
         title,
         pdfUrl: result.secure_url, // Cloudinary provides a secure URL for the uploaded file
       });
-
-      await newPdf.save();
-      fs.unlinkSync((req as any).file.path); // Remove the file from local storage after uploading
-
       res
         .status(200)
         .json({ message: "PDF uploaded successfully!", data: newPdf });

@@ -5,7 +5,9 @@ import jwt from "jsonwebtoken";
 import { Admin } from "../models/admin.model";
 import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
+import { Notice } from "../models/notice.models";
 import { Student } from "../models/student.models";
+import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
 
 export const loginAdmin = async (req: Request, res: Response) => {
@@ -798,6 +800,70 @@ export const getTg = async (req: Request, res: Response) => {
     return sendResponse(res, 200, "TG fetched successfully.", true, {
       tg,
     });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const publishNotice = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { noticeNumber, noticeSubject, noticeDescription } = req.body;
+
+    const noticeExists = await Notice.findOne({
+      noticeNumber,
+    });
+
+    if (noticeExists) {
+      return sendResponse(res, 409, "Notice already exists.", false);
+    }
+
+    if (!(req as any).file) {
+      const notice = await Notice.create({
+        author: {
+          userType: "admin",
+          userId: admin._id,
+          userName: admin.name,
+        },
+        noticeNumber,
+        noticeSubject,
+        noticeDescription,
+      });
+
+      if (!notice) {
+        return sendResponse(res, 500, "Internal server error.", false);
+      }
+      return sendResponse(res, 200, "Notice published successfully.", true);
+    }
+
+    const result = await cloudinary.v2.uploader.upload(
+      (req as any).file.path,
+      { resource_type: "raw" } // Cloudinary will automatically detect if it's a PDF
+    );
+
+    const notice = await Notice.create({
+      author: {
+        userType: "admin",
+        userId: admin._id,
+        userName: admin.name,
+      },
+      noticeNumber,
+      noticeSubject,
+      noticeDescription,
+      pdf: result.secure_url, // Cloudinary provides a secure URL for the uploaded file
+    });
+
+    if (!notice) {
+      return sendResponse(res, 500, "Internal server error.", false);
+    }
+
+    return sendResponse(res, 200, "Notice published successfully.", true);
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
