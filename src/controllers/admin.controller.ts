@@ -701,6 +701,41 @@ export const assignStudentsToTG = async (req: Request, res: Response) => {
   }
 };
 
+export const assignStudentToTG = async (req: Request, res: Response) => {
+  try {
+    const { tgId, studentId } = req.query;
+
+    if (!tgId || !studentId) {
+      return sendResponse(
+        res,
+        400,
+        "TG ID and Student ID are required.",
+        false
+      );
+    }
+    const faculty = await Faculty.findOne({ isTG: true, _id: tgId });
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const student = await Student.findById(studentId);
+
+    if (!student) {
+      return sendResponse(res, 404, "Student not found.", false);
+    }
+
+    student.TG = {
+      facultyId: faculty._id.toString(),
+      facultyName: faculty.name,
+    };
+
+    return sendResponse(res, 200, "Student assigned to TG successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
 export const searchStudent = async (req: Request, res: Response) => {
   try {
     const { searchString, semester, section } = req.query;
