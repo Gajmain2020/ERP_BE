@@ -839,7 +839,9 @@ export const publishNotice = async (req: Request, res: Response) => {
       if (!notice) {
         return sendResponse(res, 500, "Internal server error.", false);
       }
-      return sendResponse(res, 200, "Notice published successfully.", true);
+      return sendResponse(res, 200, "Notice published successfully.", true, {
+        notice,
+      });
     }
 
     const result = await cloudinary.v2.uploader.upload(
@@ -863,9 +865,23 @@ export const publishNotice = async (req: Request, res: Response) => {
       return sendResponse(res, 500, "Internal server error.", false);
     }
 
-    return sendResponse(res, 200, "Notice published successfully.", true);
+    return sendResponse(res, 200, "Notice published successfully.", true, {
+      notice,
+    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getNotices = async (req: Request, res: Response) => {
+  try {
+    const notices = await Notice.find()
+      .sort({ createdAt: -1 })
+      .select("_id noticeNumber pdf author createdAt");
+
+    return sendResponse(res, 200, "", true, { notices });
+  } catch (error) {
+    LogOutError(error);
   }
 };

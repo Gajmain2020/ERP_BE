@@ -13,6 +13,7 @@ import {
   getAllCourses,
   getAllFaculties,
   getFacultiesByCourse,
+  getNotices,
   getTg,
   loginAdmin,
   publishNotice,
@@ -78,4 +79,6 @@ router.route("/get-tg").get(authenticateAdminToken, getTg);
 router
   .route("/publish-notice")
   .post(authenticateAdminToken, upload.single("pdf"), publishNotice);
+router.route("/get-notices").get(authenticateAdminToken, getNotices);
+
 export default router;
