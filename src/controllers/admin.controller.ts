@@ -654,3 +654,152 @@ export const unassignTg = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const assignStudentsToTG = async (req: Request, res: Response) => {
+  try {
+    const students: { studentId: string }[] = req.body;
+    const tgId = req.query.tgId as string;
+
+    if (!students?.length) {
+      return sendResponse(res, 400, "No students found.", false);
+    }
+
+    if (!tgId) {
+      return sendResponse(res, 400, "Faculty ID is required.", false);
+    }
+
+    const faculty = await Faculty.findOne({ isTG: true, _id: tgId });
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const foundStudents = await Student.find({ _id: { $in: students } });
+
+    if (!foundStudents.length) {
+      return sendResponse(res, 404, "No valid students found.", false);
+    }
+
+    await Promise.all(
+      foundStudents.map((student) => {
+        student.TG = {
+          facultyId: faculty._id.toString(),
+          facultyName: faculty.name,
+        };
+        return student.save();
+      })
+    );
+
+    return sendResponse(
+      res,
+      200,
+      `${foundStudents.length} students assigned to TG successfully.`,
+      true
+    );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const assignStudentToTG = async (req: Request, res: Response) => {
+  try {
+    const { tgId, studentId } = req.query;
+
+    if (!tgId || !studentId) {
+      return sendResponse(
+        res,
+        400,
+        "TG ID and Student ID are required.",
+        false
+      );
+    }
+    const faculty = await Faculty.findOne({ isTG: true, _id: tgId });
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const student = await Student.findById(studentId);
+
+    if (!student) {
+      return sendResponse(res, 404, "Student not found.", false);
+    }
+
+    student.TG = {
+      facultyId: faculty._id.toString(),
+      facultyName: faculty.name,
+    };
+
+    await student.save();
+
+    return sendResponse(res, 200, "Student assigned to TG successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const searchStudent = async (req: Request, res: Response) => {
+  try {
+    const { searchString, semester, section } = req.query;
+
+    // Build dynamic filter
+    const filter: any = {};
+
+    if (searchString && searchString !== "") {
+      filter.$or = [
+        { name: { $regex: searchString, $options: "i" } },
+        { urn: { $regex: searchString, $options: "i" } },
+        { email: { $regex: searchString, $options: "i" } },
+      ];
+    }
+
+    if (semester && semester !== "") {
+      filter.semester = semester;
+    }
+
+    if (section && section !== "") {
+      filter.section = section;
+    }
+
+    const students = await Student.find(filter).select(
+      "_id name urn crn section email TG"
+    );
+
+    if (!students || students.length === 0) {
+      return sendResponse(res, 404, "No students found.", false);
+    }
+
+    return sendResponse(res, 200, "Students fetched successfully.", true, {
+      students,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getTg = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const tg = await Faculty.find({
+      department: admin.department,
+      isTG: true,
+    }).select("_id name email position ");
+
+    if (!tg) {
+      return sendResponse(res, 404, "No TG found.", false);
+    }
+
+    return sendResponse(res, 200, "TG fetched successfully.", true, {
+      tg,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};

@@ -32,16 +32,11 @@ const studentSchema = new mongoose.Schema<IStudent>(
     },
     // Teacher Guardian Information
     TG: {
-      teacherEmpId: String,
-      teacherId: { type: String, default: null }, // Explicitly allow null
-      teacherName: String,
-      teacherPhoneNumber: {
-        type: String,
-        validate: {
-          message: "Invalid phone number format.",
-          validator: (v) => /^\d{10}$/.test(v),
-        },
+      facultyId: {
+        ref: "faculty",
+        type: mongoose.Schema.Types.ObjectId,
       },
+      facultyName: String,
     },
 
     urn: { ...reqString, unique: true },
