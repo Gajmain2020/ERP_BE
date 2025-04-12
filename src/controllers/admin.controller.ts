@@ -419,9 +419,24 @@ export const getAllCourses = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "Admin not found.", false);
     }
 
-    const courses = await Course.find({ department: admin.department });
+    // Get semester from query
+    const { semester = "" } = req.query;
 
-    if (!courses) {
+    // Build query
+    const query: any = {
+      department: admin.department,
+    };
+
+    if (semester !== "") {
+      query.semester = semester;
+    }
+
+    const courses = await Course.find(query).populate({
+      path: "takenBy.facultyId",
+      select: "name _id",
+    });
+
+    if (!courses || courses.length === 0) {
       return sendResponse(res, 404, "No courses found.", false);
     }
 
@@ -907,7 +922,7 @@ export const getTimetable = async (req: Request, res: Response) => {
     });
 
     if (!timetable) {
-      return sendResponse(res, 404, "Timetable not found.", true, {
+      return sendResponse(res, 200, "Timetable not found.", true, {
         timetable: null,
       });
     }

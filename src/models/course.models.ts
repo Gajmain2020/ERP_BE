@@ -14,9 +14,9 @@ const courseSchema = new mongoose.Schema(
         "Open Elective",
       ],
     },
-    classType:{
+    classType: {
       ...reqString,
-      enum:["Lab", "Theory"]
+      enum: ["Lab", "Theory"],
     },
     department: reqString,
     semester: {
@@ -29,7 +29,6 @@ const courseSchema = new mongoose.Schema(
           ref: "faculty",
           type: mongoose.Schema.Types.ObjectId,
         },
-        facultyName: String,
       },
     ],
   },
