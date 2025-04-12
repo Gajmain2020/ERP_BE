@@ -7,6 +7,7 @@ import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
 import { Student } from "../models/student.models";
+import { Timetable } from "../models/timetable.model";
 import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
 
@@ -885,5 +886,35 @@ export const getNotices = async (req: Request, res: Response) => {
     return sendResponse(res, 200, "", true, { notices });
   } catch (error) {
     LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getTimetable = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { semester, section } = req.query;
+
+    const timetable = await Timetable.findOne({
+      semester,
+      section,
+      department: admin.department,
+    });
+
+    if (!timetable) {
+      return sendResponse(res, 404, "Timetable not found.", false, {
+        timetable: null,
+      });
+    }
+
+    return sendResponse(res, 200, "Timetable found", true, { timetable });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
   }
 };

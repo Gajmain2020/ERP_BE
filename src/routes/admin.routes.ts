@@ -15,6 +15,7 @@ import {
   getFacultiesByCourse,
   getNotices,
   getTg,
+  getTimetable,
   loginAdmin,
   publishNotice,
   registerAdmin,
@@ -80,5 +81,8 @@ router
   .route("/publish-notice")
   .post(authenticateAdminToken, upload.single("pdf"), publishNotice);
 router.route("/get-notices").get(authenticateAdminToken, getNotices);
+
+// Timetable Relate Routes
+router.route("/get-timetable").get(authenticateAdminToken, getTimetable);
 
 export default router;
