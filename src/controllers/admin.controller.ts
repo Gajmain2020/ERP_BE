@@ -401,7 +401,9 @@ export const addNewCourse = async (req: Request, res: Response) => {
     if (!newCourse) {
       return sendResponse(res, 500, "Internal server error.", false);
     }
-    return sendResponse(res, 201, "Course added successfully.", true);
+    return sendResponse(res, 201, "Course added successfully.", true, {
+      course: newCourse,
+    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
