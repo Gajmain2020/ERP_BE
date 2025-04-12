@@ -907,7 +907,7 @@ export const getTimetable = async (req: Request, res: Response) => {
     });
 
     if (!timetable) {
-      return sendResponse(res, 404, "Timetable not found.", false, {
+      return sendResponse(res, 404, "Timetable not found.", true, {
         timetable: null,
       });
     }
