@@ -957,7 +957,9 @@ export const getTimetable = async (req: Request, res: Response) => {
       .populate("week.periods.faculty", "name");
 
     if (!timetable) {
-      return sendResponse(res, 404, "Timetable not found.", false);
+      return sendResponse(res, 200, "Timetable not found.", true, {
+        timetable: null,
+      });
     }
 
     // Transform the response
