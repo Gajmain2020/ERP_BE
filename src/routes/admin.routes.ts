@@ -15,10 +15,12 @@ import {
   getFacultiesByCourse,
   getNotices,
   getTg,
+  getTimetable,
   loginAdmin,
   publishNotice,
   registerAdmin,
   removeFacultyFromCourse,
+  saveTimetable,
   searchStudent,
   unassignTg,
 } from "../controllers/admin.controller";
@@ -80,5 +82,9 @@ router
   .route("/publish-notice")
   .post(authenticateAdminToken, upload.single("pdf"), publishNotice);
 router.route("/get-notices").get(authenticateAdminToken, getNotices);
+
+// Timetable Relate Routes
+router.route("/get-timetable").get(authenticateAdminToken, getTimetable);
+router.route("/save-timetable").post(authenticateAdminToken, saveTimetable);
 
 export default router;

@@ -7,6 +7,7 @@ import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
 import { Student } from "../models/student.models";
+import { Timetable } from "../models/timetable.model";
 import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
 
@@ -401,7 +402,9 @@ export const addNewCourse = async (req: Request, res: Response) => {
     if (!newCourse) {
       return sendResponse(res, 500, "Internal server error.", false);
     }
-    return sendResponse(res, 201, "Course added successfully.", true);
+    return sendResponse(res, 201, "Course added successfully.", true, {
+      course: newCourse,
+    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
@@ -416,14 +419,62 @@ export const getAllCourses = async (req: Request, res: Response) => {
       return sendResponse(res, 404, "Admin not found.", false);
     }
 
-    const courses = await Course.find({ department: admin.department });
+    // Get semester from query
+    const { semester = "" } = req.query;
 
-    if (!courses) {
+    // Build query
+    const query: any = {
+      department: admin.department,
+    };
+
+    if (semester !== "") {
+      query.semester = semester;
+    }
+
+    const courses = await Course.find(query).populate({
+      path: "takenBy.facultyId",
+      select: "name _id",
+    });
+
+    interface PopulatedFaculty {
+      _id: string;
+      name: string;
+    }
+
+    function isPopulatedFaculty(faculty: any): faculty is PopulatedFaculty {
+      return faculty && typeof faculty === "object" && "name" in faculty;
+    }
+
+    // Reshape the `takenBy` array
+    const modifiedCourses = courses.map((course) => {
+      const modifiedTakenBy = course.takenBy.map((item) => {
+        if (isPopulatedFaculty(item.facultyId)) {
+          return {
+            _id: item._id,
+            facultyId: item.facultyId._id,
+            name: item.facultyId.name,
+          };
+        } else {
+          return {
+            _id: item._id,
+            facultyId: item.facultyId.toString(),
+            name: "Unknown",
+          };
+        }
+      });
+
+      return {
+        ...course.toObject(),
+        takenBy: modifiedTakenBy,
+      };
+    });
+
+    if (!courses || courses.length === 0) {
       return sendResponse(res, 404, "No courses found.", false);
     }
 
     return sendResponse(res, 200, "Courses fetched successfully.", true, {
-      courses,
+      courses: modifiedCourses,
     });
   } catch (error) {
     LogOutError(error);
@@ -883,5 +934,113 @@ export const getNotices = async (req: Request, res: Response) => {
     return sendResponse(res, 200, "", true, { notices });
   } catch (error) {
     LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getTimetable = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { semester, section } = req.query;
+
+    const timetable = await Timetable.findOne({
+      semester,
+      section,
+      department: admin.department,
+    })
+      .populate("week.periods.course", "courseShortName")
+      .populate("week.periods.faculty", "name");
+
+    if (!timetable) {
+      return sendResponse(res, 200, "Timetable not found.", true, {
+        timetable: null,
+      });
+    }
+
+    // Transform the response
+    const formattedWeek = timetable.week.map((day) => {
+      const formattedPeriods = day.periods.map((period) => {
+        return {
+          periodNumber: period.periodNumber,
+          courseShortName: (period.course as any)?.courseShortName || "Unknown",
+          facultyName: (period.faculty as any)?.name || "Unknown",
+        };
+      });
+
+      return {
+        day: day.day,
+        periods: formattedPeriods,
+      };
+    });
+
+    return sendResponse(res, 200, "Timetable found", true, {
+      timetable: formattedWeek,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const saveTimetable = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { semester, section, weekData } = req.body;
+
+    const savedTimetable = await Timetable.create({
+      semester,
+      section,
+      department: admin.department,
+      week: weekData,
+    });
+
+    if (!savedTimetable) {
+      return sendResponse(res, 403, "Error while saving the timetable.", false);
+    }
+
+    const timetable = await Timetable.findOne({
+      semester,
+      section,
+      department: admin.department,
+    })
+      .populate("week.periods.course", "courseShortName")
+      .populate("week.periods.faculty", "name");
+
+    if (!timetable) {
+      return sendResponse(res, 404, "Timetable not found.", false);
+    }
+
+    // Transform the response
+    const formattedWeek = timetable.week.map((day) => {
+      const formattedPeriods = day.periods.map((period) => {
+        return {
+          periodNumber: period.periodNumber,
+          courseShortName: (period.course as any)?.courseShortName || "Unknown",
+          facultyName: (period.faculty as any)?.name || "Unknown",
+        };
+      });
+
+      return {
+        day: day.day,
+        periods: formattedPeriods,
+      };
+    });
+
+    return sendResponse(res, 201, "Timetable created successfully.", true, {
+      timetable: formattedWeek,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
   }
 };
