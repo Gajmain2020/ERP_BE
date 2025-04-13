@@ -966,3 +966,61 @@ export const getTimetable = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const saveTimetable = async (req: Request, res: Response) => {
+  try {
+    const adminId = req.user?.id;
+    const admin = await Admin.findById(adminId);
+    if (!admin) {
+      return sendResponse(res, 404, "Admin not found.", false);
+    }
+
+    const { semester, section, weekData } = req.body;
+
+    const savedTimetable = await Timetable.create({
+      semester,
+      section,
+      department: admin.department,
+      week: weekData,
+    });
+
+    if (!savedTimetable) {
+      return sendResponse(res, 403, "Error while saving the timetable.", false);
+    }
+
+    const timetable = await Timetable.findOne({
+      semester,
+      section,
+      department: admin.department,
+    })
+      .populate("week.periods.course", "courseShortName")
+      .populate("week.periods.faculty", "name");
+
+    if (!timetable) {
+      return sendResponse(res, 404, "Timetable not found.", false);
+    }
+
+    // Transform the response
+    const formattedWeek = timetable.week.map((day) => {
+      const formattedPeriods = day.periods.map((period) => {
+        return {
+          periodNumber: period.periodNumber,
+          courseShortName: (period.course as any)?.courseShortName || "Unknown",
+          facultyName: (period.faculty as any)?.name || "Unknown",
+        };
+      });
+
+      return {
+        day: day.day,
+        periods: formattedPeriods,
+      };
+    });
+
+    return sendResponse(res, 201, "Timetable created successfully.", true, {
+      timetable: formattedWeek,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
