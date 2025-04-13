@@ -952,15 +952,33 @@ export const getTimetable = async (req: Request, res: Response) => {
       semester,
       section,
       department: admin.department,
-    });
+    })
+      .populate("week.periods.course", "courseShortName")
+      .populate("week.periods.faculty", "name");
 
     if (!timetable) {
-      return sendResponse(res, 200, "Timetable not found.", true, {
-        timetable: null,
-      });
+      return sendResponse(res, 404, "Timetable not found.", false);
     }
 
-    return sendResponse(res, 200, "Timetable found", true, { timetable });
+    // Transform the response
+    const formattedWeek = timetable.week.map((day) => {
+      const formattedPeriods = day.periods.map((period) => {
+        return {
+          periodNumber: period.periodNumber,
+          courseShortName: (period.course as any)?.courseShortName || "Unknown",
+          facultyName: (period.faculty as any)?.name || "Unknown",
+        };
+      });
+
+      return {
+        day: day.day,
+        periods: formattedPeriods,
+      };
+    });
+
+    return sendResponse(res, 200, "Timetable found", true, {
+      timetable: formattedWeek,
+    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
