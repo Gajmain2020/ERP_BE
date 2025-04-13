@@ -1,8 +1,6 @@
 interface ITeacherGuardian {
-  teacherName?: string;
-  teacherId?: string;
-  teacherPhoneNumber?: string;
-  teacherEmpId?: string;
+  facultyName?: string;
+  facultyId?: string;
 }
 
 export interface IStudent {
