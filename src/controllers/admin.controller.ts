@@ -815,7 +815,7 @@ export const searchStudent = async (req: Request, res: Response) => {
     }
 
     const students = await Student.find(filter).select(
-      "_id name urn crn section email TG"
+      "_id name urn crn section email TG isDetailsFilled isVerified"
     );
 
     if (!students || students.length === 0) {
