@@ -436,12 +436,45 @@ export const getAllCourses = async (req: Request, res: Response) => {
       select: "name _id",
     });
 
+    interface PopulatedFaculty {
+      _id: string;
+      name: string;
+    }
+
+    function isPopulatedFaculty(faculty: any): faculty is PopulatedFaculty {
+      return faculty && typeof faculty === "object" && "name" in faculty;
+    }
+
+    // Reshape the `takenBy` array
+    const modifiedCourses = courses.map((course) => {
+      const modifiedTakenBy = course.takenBy.map((item) => {
+        if (isPopulatedFaculty(item.facultyId)) {
+          return {
+            _id: item._id,
+            facultyId: item.facultyId._id,
+            name: item.facultyId.name,
+          };
+        } else {
+          return {
+            _id: item._id,
+            facultyId: item.facultyId.toString(),
+            name: "Unknown",
+          };
+        }
+      });
+
+      return {
+        ...course.toObject(),
+        takenBy: modifiedTakenBy,
+      };
+    });
+
     if (!courses || courses.length === 0) {
       return sendResponse(res, 404, "No courses found.", false);
     }
 
     return sendResponse(res, 200, "Courses fetched successfully.", true, {
-      courses,
+      courses: modifiedCourses,
     });
   } catch (error) {
     LogOutError(error);
