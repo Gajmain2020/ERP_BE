@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import bcrypt from "bcrypt";
 import { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import fs from "fs";
+import jwt from "jsonwebtoken";
+import { Error500 } from "../constants";
+import { Assignment } from "../models/assignment.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
 import cloudinary from "../utils/cloudinary.config";
-import { Error500 } from "../constants";
 import { LogOutError, sendResponse } from "../utils/utils";
-import { Assignment } from "../models/assignment.models";
 
 const removeFile = (path: string): void => {
   if (fs.existsSync(path)) {
@@ -37,8 +37,6 @@ export const registerFaculty = async (
 
     const hashPassword = await bcrypt.hash(email, 8);
 
-    console.log(req.body);
-
     const faculty = await Faculty.create({
       ...req.body,
       password: hashPassword,
@@ -64,8 +62,6 @@ export const loginFaculty = async (
 
     const faculty = await Faculty.findOne({ email });
 
-    console.log(faculty);
-
     if (!faculty) {
       res.status(404).json({
         message: "Invalid email or password.",
@@ -75,7 +71,6 @@ export const loginFaculty = async (
     }
 
     const isPasswordValid = await bcrypt.compare(password, faculty.password);
-    console.log(isPasswordValid);
     if (!isPasswordValid) {
       res.status(401).json({
         message: "Invalid email or password.",
@@ -201,11 +196,8 @@ export const updateProfile = async (
     );
 
     if (result) {
-      console.log("1");
       updatedFaculty.profileImage = result;
-      console.log("2");
       await updatedFaculty.save();
-      console.log("3", updatedFaculty);
     }
 
     res.status(200).json({
@@ -299,6 +291,85 @@ export const getFacultyProfile = async (
       data: { profile: faculty },
     });
     return;
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const getNotices = async (req: Request, res: Response) => {
+  try {
+    const notices = await Notice.find();
+
+    return sendResponse(res, 200, "", true, { notices });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const publishNotice = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const { noticeNumber, noticeSubject, noticeDescription } = req.body;
+
+    const noticeExists = await Notice.findOne({
+      noticeNumber,
+    });
+
+    if (noticeExists) {
+      return sendResponse(res, 409, "Notice already exists.", false);
+    }
+
+    if (!(req as any).file) {
+      const notice = await Notice.create({
+        author: {
+          userType: "faculty",
+          userId: faculty._id,
+          userName: faculty.name,
+        },
+        noticeNumber,
+        noticeSubject,
+        noticeDescription,
+      });
+
+      if (!notice) {
+        return sendResponse(res, 500, "Internal server error.", false);
+      }
+      return sendResponse(res, 200, "Notice published successfully.", true, {
+        notice,
+      });
+    }
+
+    const result = await cloudinary.v2.uploader.upload(
+      (req as any).file.path,
+      { resource_type: "raw" } // Cloudinary will automatically detect if it's a PDF
+    );
+
+    const notice = await Notice.create({
+      author: {
+        userType: "admin",
+        userId: faculty._id,
+        userName: faculty.name,
+      },
+      noticeNumber,
+      noticeSubject,
+      noticeDescription,
+      pdf: result.secure_url, // Cloudinary provides a secure URL for the uploaded file
+    });
+
+    if (!notice) {
+      return sendResponse(res, 500, "Internal server error.", false);
+    }
+
+    return sendResponse(res, 200, "Notice published successfully.", true, {
+      notice,
+    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
