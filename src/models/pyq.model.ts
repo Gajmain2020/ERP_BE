@@ -12,12 +12,17 @@ const pyqSchema = new mongoose.Schema(
     },
     examType: {
       type: String,
-      enum: ["regular", "backlog"],
+      enum: ["Regular", "Backlog"],
       required: true,
     },
     course: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "course",
+      required: true,
+    },
+    author: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "faculty",
       required: true,
     },
   },

@@ -5,8 +5,10 @@ import fs from "fs";
 import jwt from "jsonwebtoken";
 import { Error500 } from "../constants";
 import { Assignment } from "../models/assignment.models";
+import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
+import { PYQ } from "../models/pyq.model";
 import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
 
@@ -363,12 +365,99 @@ export const publishNotice = async (req: Request, res: Response) => {
       pdf: result.secure_url, // Cloudinary provides a secure URL for the uploaded file
     });
 
+    // Remove the file from local storage after uploading
+    fs.unlinkSync((req as any).file.path);
+
     if (!notice) {
       return sendResponse(res, 500, "Internal server error.", false);
     }
 
     return sendResponse(res, 200, "Notice published successfully.", true, {
       notice,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const uploadPyq = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+    const faculty = await Faculty.findById(facultyId);
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const { courseCode, examSession, examType } = req.body;
+
+    const course = await Course.findOne({
+      courseCode,
+    });
+
+    if (!course) {
+      // Remove the file.
+      fs.unlinkSync((req as any).file.path);
+
+      return sendResponse(
+        res,
+        404,
+        `No course with ${courseCode} found in all the courses.`,
+        false
+      );
+    }
+
+    const pyqExists = await Course.findOne({
+      courseCode,
+      examSession,
+      examType,
+    });
+
+    if (pyqExists) {
+      // Remove the file
+      fs.unlinkSync((req as any).file.path);
+
+      return sendResponse(res, 409, "Specified pyq already exists.", false);
+    }
+
+    //upload the file to cloudinary
+    const result = await cloudinary.v2.uploader.upload(
+      (req as any).file.path,
+      { resource_type: "raw" } // Cloudinary will automatically detect if it's a PDF
+    );
+
+    // delete the file from the server
+    fs.unlinkSync((req as any).file.path);
+
+    const pyq = await PYQ.create({
+      course: course._id,
+      author: faculty._id,
+      examSession,
+      examType,
+      pdfUrl: result.secure_url,
+    });
+
+    if (!pyq) {
+      return sendResponse(
+        res,
+        403,
+        "Something went wrong while uploading the pyq.",
+        false
+      );
+    }
+
+    const savedPyq = await PYQ.findById(pyq._id)
+      .populate({
+        path: "course",
+        select: "courseName courseShortName semester",
+      })
+      .populate({
+        path: "author",
+        select: "name email",
+      });
+
+    return sendResponse(res, 201, "PYQ uploaded successfully.", true, {
+      pyq: savedPyq,
     });
   } catch (error) {
     LogOutError(error);

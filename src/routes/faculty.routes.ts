@@ -7,6 +7,7 @@ import {
   publishNotice,
   registerFaculty,
   updateProfile,
+  uploadPyq,
 } from "../controllers/faculty.controller";
 import { authenticateFacultyToken } from "../middleware/faculty.middleware";
 import upload from "../utils/multer.config";
@@ -39,5 +40,10 @@ router.route("/get-notices").get(authenticateFacultyToken, getNotices);
 router
   .route("/publish-notice")
   .post(authenticateFacultyToken, upload.single("pdf"), publishNotice);
+
+// PYQ Related Router
+router
+  .route("/upload-pyq")
+  .post(authenticateFacultyToken, upload.single("pdf"), uploadPyq);
 
 export default router;
