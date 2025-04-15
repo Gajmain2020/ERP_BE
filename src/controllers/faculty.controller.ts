@@ -494,3 +494,25 @@ export const getPyqs = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal Server Error.", false);
   }
 };
+
+export const deletePyq = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+
+    const course = await Course.findOne({
+      author: facultyId,
+      _id: req.query.pyqId,
+    });
+
+    if (!course) {
+      return sendResponse(res, 404, "Notice is not posted by you.", false);
+    }
+
+    await Course.findByIdAndDelete(req.query.pyqId);
+
+    return sendResponse(res, 200, "Notice deleted successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};

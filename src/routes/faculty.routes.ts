@@ -2,7 +2,9 @@ import { Router } from "express";
 import { addNewCourse, getNotices } from "../controllers/admin.controller";
 import {
   changePassword,
+  deletePyq,
   getFacultyProfile,
+  getPyqs,
   loginFaculty,
   publishNotice,
   registerFaculty,
@@ -45,5 +47,7 @@ router
 router
   .route("/upload-pyq")
   .post(authenticateFacultyToken, upload.single("pdf"), uploadPyq);
+router.route("/get-pyq").get(authenticateFacultyToken, getPyqs);
+router.route("/delete-pyq").delete(authenticateFacultyToken, deletePyq);
 
 export default router;
