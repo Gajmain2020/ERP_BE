@@ -1,28 +1,23 @@
 import mongoose from "mongoose";
-import { reqString } from "../utils/utils";
+
 const noticeSchema = new mongoose.Schema(
   {
     author: {
-      authorId: reqString,
-      authorName: reqString,
+      userType: { required: true, type: String },
+      userId: {
+        refPath: "author.userType",
+        required: true,
+        type: mongoose.Schema.Types.ObjectId,
+      },
+      userName: { required: true, type: String },
     },
-    noticeDate: {
-      default: () => new Date(),
-      type: Date,
-    },
-    noticeFile: reqString,
-    noticeId: { ...reqString, unique: true },
-    noticeTarget: {
-      default: "general",
-      enum: ["faculty", "student", "general"],
-      type: String,
-    },
-    noticeTitle: reqString,
-    noticeType: { ...reqString, lowercase: true },
+    noticeNumber: { type: String, required: true },
+    noticeSubject: { type: String, required: true },
+    noticeDescription: { type: String, required: true },
+    pdf: String,
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
-const Notice = mongoose.model("notice", noticeSchema);
+
+const Notice = mongoose.model("Notice", noticeSchema);
 export { Notice };
