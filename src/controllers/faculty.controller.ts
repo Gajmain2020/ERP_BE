@@ -464,3 +464,33 @@ export const uploadPyq = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const getPyqs = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+
+    if (!facultyId) {
+      return sendResponse(
+        res,
+        404,
+        "Faculty with the given token not found.",
+        false
+      );
+    }
+
+    const savedPyq = await PYQ.find({ author: facultyId })
+      .populate({
+        path: "course",
+        select: "courseName courseShortName semester",
+      })
+      .populate({
+        path: "author",
+        select: "name email",
+      });
+
+    return sendResponse(res, 200, "", true, { pyqs: savedPyq });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};
