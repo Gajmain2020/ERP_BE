@@ -4,6 +4,7 @@ import {
   changePassword,
   deletePyq,
   getFacultyProfile,
+  getFacultyTimetable,
   getPyqs,
   loginFaculty,
   publishNotice,
@@ -37,13 +38,18 @@ router
 //adding course
 router.route("/add-course").post(authenticateFacultyToken, addNewCourse);
 
+// TIMETABLE RELATED ROUTE
+router
+  .route("/get-timetable")
+  .get(authenticateFacultyToken, getFacultyTimetable);
+
 // NOTICE RELATED ROUTE
 router.route("/get-notices").get(authenticateFacultyToken, getNotices);
 router
   .route("/publish-notice")
   .post(authenticateFacultyToken, upload.single("pdf"), publishNotice);
 
-// PYQ Related Router
+// PYQ RELATED ROUTE
 router
   .route("/upload-pyq")
   .post(authenticateFacultyToken, upload.single("pdf"), uploadPyq);
