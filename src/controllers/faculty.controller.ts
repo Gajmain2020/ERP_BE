@@ -498,19 +498,18 @@ export const getPyqs = async (req: Request, res: Response) => {
 export const deletePyq = async (req: Request, res: Response) => {
   try {
     const facultyId = req.user?.id;
+    const pyqId = req.query.pyqId;
 
-    const course = await Course.findOne({
+    const deleted = await PYQ.findOneAndDelete({
+      _id: pyqId,
       author: facultyId,
-      _id: req.query.pyqId,
     });
 
-    if (!course) {
-      return sendResponse(res, 404, "Notice is not posted by you.", false);
+    if (!deleted) {
+      return sendResponse(res, 404, "PYQ is not posted by you.", false);
     }
 
-    await Course.findByIdAndDelete(req.query.pyqId);
-
-    return sendResponse(res, 200, "Notice deleted successfully.", true);
+    return sendResponse(res, 200, "PYQ deleted successfully.", true);
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal Server Error.", false);
