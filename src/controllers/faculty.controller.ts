@@ -9,6 +9,7 @@ import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
 import { PYQ } from "../models/pyq.model";
+import { Timetable } from "../models/timetable.model";
 import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
 
@@ -510,6 +511,61 @@ export const deletePyq = async (req: Request, res: Response) => {
     }
 
     return sendResponse(res, 200, "PYQ deleted successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};
+
+export const getFacultyTimetable = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+
+    const timetables = await Timetable.find({})
+      .populate("week.periods.course", "courseName courseCode semester")
+      .populate("week.periods.faculty", "_id")
+      .lean(); // ensures returned documents are plain JS objects
+
+    const facultyPeriods: {
+      day: string;
+      periodNumber: number;
+      courseName: string;
+      courseCode: string;
+      semester: string;
+      section: string;
+    }[] = [];
+
+    for (const timetable of timetables) {
+      for (const day of timetable.week) {
+        for (const period of day.periods) {
+          const faculty = { _id: (period.faculty as any)._id.toString() };
+          if (faculty && faculty._id.toString() === facultyId) {
+            const course = period.course as unknown as {
+              courseName: string;
+              courseCode: string;
+              semester: string;
+            };
+
+            facultyPeriods.push({
+              day: day.day,
+              periodNumber: period.periodNumber,
+              courseName: course.courseName,
+              courseCode: course.courseCode,
+              semester: course.semester,
+              section: timetable.section,
+            });
+          }
+        }
+      }
+    }
+
+    return sendResponse(
+      res,
+      200,
+      "Faculty timetable fetched successfully.",
+      true,
+      { periods: facultyPeriods }
+    );
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal Server Error.", false);
