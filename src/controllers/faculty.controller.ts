@@ -604,3 +604,73 @@ export const getAssignments = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal Server Error.", false);
   }
 };
+
+export const uploadAssignment = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+    const faculty = await Faculty.findById(facultyId);
+
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const { courseCode, assignmentNumber, assignmentName, dueDate } = req.body;
+
+    const course = await Course.findOne({ courseCode });
+
+    if (!course) {
+      fs.unlinkSync((req as any).file.path);
+      return sendResponse(
+        res,
+        404,
+        `No course with code ${courseCode} found.`,
+        false
+      );
+    }
+
+    // Check for duplicate assignment
+    const assignmentExists = await Assignment.findOne({
+      courseId: course._id,
+      assignmentNumber,
+    });
+
+    if (assignmentExists) {
+      fs.unlinkSync((req as any).file.path);
+      return sendResponse(res, 409, "Assignment already exists.", false);
+    }
+
+    // Upload file to Cloudinary
+    const result = await cloudinary.v2.uploader.upload((req as any).file.path, {
+      resource_type: "raw",
+    });
+
+    fs.unlinkSync((req as any).file.path); // Clean up local file
+
+    // Create assignment
+    const assignment = await Assignment.create({
+      courseId: course._id,
+      facultyId: faculty._id,
+      assignmentNumber,
+      assignmentName,
+      dueDate,
+      assignmentFileUrl: result.secure_url,
+    });
+
+    const populatedAssignment = await Assignment.findById(assignment._id)
+      .populate({
+        path: "courseId",
+        select: "courseName courseShortName courseCode semester section",
+      })
+      .populate({
+        path: "facultyId",
+        select: "name email",
+      });
+
+    return sendResponse(res, 201, "Assignment uploaded successfully.", true, {
+      assignment: populatedAssignment,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};

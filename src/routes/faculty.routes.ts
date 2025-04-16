@@ -15,6 +15,7 @@ import {
 } from "../controllers/faculty.controller";
 import { authenticateFacultyToken } from "../middleware/faculty.middleware";
 import upload from "../utils/multer.config";
+import upload from "../utils/multer.config";
 
 const router = Router();
 
@@ -41,6 +42,9 @@ router.route("/add-course").post(authenticateFacultyToken, addNewCourse);
 
 // ASSIGNMENT RELATED ROUTE
 router.route("/get-assignments").get(authenticateFacultyToken, getAssignments);
+router
+  .route("/upload-assignment")
+  .post(authenticateFacultyToken, upload.single("pdf"), uploadAssignment);
 
 // TIMETABLE RELATED ROUTE
 router
