@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { addNewCourse, getNotices } from "../controllers/admin.controller";
+import { getNotices } from "../controllers/admin.controller";
 import {
   changePassword,
   deleteAssignment,
@@ -7,10 +7,13 @@ import {
   getAssignments,
   getFacultyProfile,
   getFacultyTimetable,
+  getPendingAttendanceClass,
   getPyqs,
+  getStudents,
   loginFaculty,
   publishNotice,
   registerFaculty,
+  saveAttendance,
   updateProfile,
   uploadAssignment,
   uploadPyq,
@@ -38,8 +41,10 @@ router
   .route("/change-password")
   .patch(authenticateFacultyToken, changePassword);
 
-//adding course
-router.route("/add-course").post(authenticateFacultyToken, addNewCourse);
+// ATTENDANCE RELATED ROUTE
+router
+  .route("/get-pending-attendance-classes")
+  .get(authenticateFacultyToken, getPendingAttendanceClass);
 
 // ASSIGNMENT RELATED ROUTE
 router.route("/get-assignments").get(authenticateFacultyToken, getAssignments);
@@ -54,6 +59,12 @@ router
 router
   .route("/get-timetable")
   .get(authenticateFacultyToken, getFacultyTimetable);
+
+// ATTENDANCE RELATED ROUTE
+router.route("/save-attendance").post(authenticateFacultyToken, saveAttendance);
+
+// STUDENTS RELATED ROUTES
+router.route("/get-students").get(authenticateFacultyToken, getStudents);
 
 // NOTICE RELATED ROUTE
 router.route("/get-notices").get(authenticateFacultyToken, getNotices);
