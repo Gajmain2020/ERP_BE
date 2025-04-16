@@ -674,3 +674,29 @@ export const uploadAssignment = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal server error.", false);
   }
 };
+
+export const deleteAssignment = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+    const assignmentId = req.query.assignmentId;
+
+    const deleted = await Assignment.findOneAndDelete({
+      _id: assignmentId,
+      facultyId,
+    });
+
+    if (!deleted) {
+      return sendResponse(
+        res,
+        404,
+        "Assignment not found or not posted by you.",
+        false
+      );
+    }
+
+    return sendResponse(res, 200, "Assignment deleted successfully.", true);
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};

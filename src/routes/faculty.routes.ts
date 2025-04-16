@@ -2,6 +2,7 @@ import { Router } from "express";
 import { addNewCourse, getNotices } from "../controllers/admin.controller";
 import {
   changePassword,
+  deleteAssignment,
   deletePyq,
   getAssignments,
   getFacultyProfile,
@@ -11,10 +12,10 @@ import {
   publishNotice,
   registerFaculty,
   updateProfile,
+  uploadAssignment,
   uploadPyq,
 } from "../controllers/faculty.controller";
 import { authenticateFacultyToken } from "../middleware/faculty.middleware";
-import upload from "../utils/multer.config";
 import upload from "../utils/multer.config";
 
 const router = Router();
@@ -45,6 +46,9 @@ router.route("/get-assignments").get(authenticateFacultyToken, getAssignments);
 router
   .route("/upload-assignment")
   .post(authenticateFacultyToken, upload.single("pdf"), uploadAssignment);
+router
+  .route("/delete-assignment")
+  .delete(authenticateFacultyToken, deleteAssignment);
 
 // TIMETABLE RELATED ROUTE
 router
