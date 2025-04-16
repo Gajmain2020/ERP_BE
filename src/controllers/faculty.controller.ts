@@ -10,6 +10,7 @@ import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
 import { PYQ } from "../models/pyq.model";
+import { Student } from "../models/student.models";
 import { Timetable } from "../models/timetable.model";
 import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
@@ -715,3 +716,22 @@ export const getPendingAttendanceClass = async (
     res.status(500).json({ error: "Server Error" });
   }
 };
+
+export async function getStudents(req: Request, res: Response) {
+  try {
+    const { department, semester, section } = req.query;
+
+    // Build dynamic filter object
+    const filter: Record<string, any> = {};
+    if (department) filter.department = department;
+    if (semester) filter.semester = semester;
+    if (section) filter.section = section;
+
+    const students = await Student.find(filter).select("name rollNumber _id");
+
+    return sendResponse(res, 200, "", true, { students });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+}

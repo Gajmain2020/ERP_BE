@@ -9,6 +9,7 @@ import {
   getFacultyTimetable,
   getPendingAttendanceClass,
   getPyqs,
+  getStudents,
   loginFaculty,
   publishNotice,
   registerFaculty,
@@ -60,6 +61,9 @@ router
 router
   .route("/get-timetable")
   .get(authenticateFacultyToken, getFacultyTimetable);
+
+// STUDENTS RELATED ROUTES
+router.route("/get-students").get(authenticateFacultyToken, getStudents);
 
 // NOTICE RELATED ROUTE
 router.route("/get-notices").get(authenticateFacultyToken, getNotices);
