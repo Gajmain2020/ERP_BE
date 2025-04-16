@@ -1,47 +1,46 @@
 import mongoose from "mongoose";
-import { reqString } from "../utils/utils";
 
-const assignmentSchema = new mongoose.Schema(
+const AssignmentSchema = new mongoose.Schema(
   {
-    assignmentId: { ...reqString, unique: true },
-    author: {
-      authorId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "faculty",
-        required: true,
-      },
-      authorName: reqString,
+    assignmentNumber: {
+      type: Number,
+      required: true,
     },
-    assignmentTitle: reqString,
-    semester: {
-      ...reqString,
-      enum: ["I", "II", "III", "IV", "V", "VI", "VII", "VIII"],
+    assignmentName: {
+      type: String,
+      required: true,
     },
-    section: reqString,
-    course: {
-      courseId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "course",
-        require: true,
-      },
-      courseShoutName: reqString,
+    courseId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "course",
+      required: true,
     },
-    submissions: [
+    facultyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "faculty",
+      required: true,
+    },
+    dueDate: {
+      type: Date,
+      required: true,
+    },
+    assignmentFileUrl: {
+      type: String,
+      required: true,
+    },
+    submittedStudents: [
       {
         studentId: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "student",
-          required: true,
+          ref: "Student",
         },
-        studentName: String,
-        submittedAt: { type: Date, required: true },
-        fileUrl: { type: String, required: true },
+        submittedAt: Date,
+        fileUrl: String,
       },
     ],
   },
   { timestamps: true }
 );
 
-const Assignment = mongoose.model("assignment", assignmentSchema);
-
-export { Assignment };
+const Assignments = mongoose.model("assignment", AssignmentSchema);
+export { Assignments };

@@ -571,3 +571,36 @@ export const getFacultyTimetable = async (req: Request, res: Response) => {
     return sendResponse(res, 500, "Internal Server Error.", false);
   }
 };
+
+export const getAssignments = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+
+    const assignments = await Assignment.find({ facultyId })
+      .populate({
+        path: "courseId",
+        select: "courseName courseCode courseShortName",
+      })
+      .sort({ createdAt: -1 });
+
+    const response = assignments.map((a) => ({
+      assignmentNumber: a.assignmentNumber,
+      assignmentName: a.assignmentName,
+      dueDate: a.dueDate,
+      assignmentFileUrl: a.assignmentFileUrl,
+      submittedStudentsCount: a.submittedStudents.length,
+      createdAt: a.createdAt,
+      updatedAt: a.updatedAt,
+      course: {
+        courseName: a.courseId?.courseName,
+        courseCode: a.courseId?.courseCode,
+        courseShortName: a.courseId?.courseShortName,
+      },
+    }));
+
+    return sendResponse(res, 200, "", true, { assignments: response });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};

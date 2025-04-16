@@ -3,6 +3,7 @@ import { addNewCourse, getNotices } from "../controllers/admin.controller";
 import {
   changePassword,
   deletePyq,
+  getAssignments,
   getFacultyProfile,
   getFacultyTimetable,
   getPyqs,
@@ -37,6 +38,9 @@ router
 
 //adding course
 router.route("/add-course").post(authenticateFacultyToken, addNewCourse);
+
+// ASSIGNMENT RELATED ROUTE
+router.route("/get-assignments").get(authenticateFacultyToken, getAssignments);
 
 // TIMETABLE RELATED ROUTE
 router
