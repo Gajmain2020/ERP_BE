@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 const AssignmentSchema = new mongoose.Schema(
   {
     assignmentNumber: {
-      type: Number,
+      type: String,
       required: true,
     },
     assignmentName: {
