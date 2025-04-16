@@ -4,7 +4,7 @@ import { Request, Response } from "express";
 import fs from "fs";
 import jwt from "jsonwebtoken";
 import { Error500 } from "../constants";
-import { Assignment } from "../models/assignment.models";
+import { Assignments } from "../models/assignment.models";
 import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
@@ -12,12 +12,6 @@ import { PYQ } from "../models/pyq.model";
 import { Timetable } from "../models/timetable.model";
 import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
-
-const removeFile = (path: string): void => {
-  if (fs.existsSync(path)) {
-    fs.unlinkSync(path);
-  }
-};
 
 export const registerFaculty = async (
   req: Request,
@@ -97,45 +91,6 @@ export const loginFaculty = async (
       id: faculty._id,
     });
   } catch (error) {
-    res.status(500).json(Error500(error));
-  }
-};
-
-export const addNotice = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const { noticeId } = req.body;
-
-    const isNoticeIdTaken = await Assignment.findOne({
-      noticeId,
-    });
-
-    if (isNoticeIdTaken) {
-      return sendResponse(res, 409, `${noticeId} already exists.`, false);
-    }
-
-    const result = await cloudinary.v2.uploader.upload((req as any).file.path, {
-      resource_type: "raw",
-    });
-
-    const notice = await Notice.create({
-      ...req.body,
-      author: {
-        authorId: req.user.id,
-        authorName: req.user.name,
-      },
-      noticeFile: result.url,
-    });
-
-    removeFile((req as any).file.path);
-
-    res.status(201).json({
-      message: `Notice with Notice ID ${noticeId} added successfully.`,
-      success: true,
-      data: notice,
-    });
-  } catch (error) {
-    removeFile((req as any).file.path);
-    LogOutError(error);
     res.status(500).json(Error500(error));
   }
 };
@@ -233,44 +188,6 @@ export const changePassword = async (req: Request, res: Response) => {
     await faculty.save();
 
     sendResponse(res, 200, "Password changed successfully.", true);
-  } catch (error) {
-    LogOutError(error);
-    return sendResponse(res, 500, "Internal server error.", false);
-  }
-};
-
-export const addAssignment = async (req: Request, res: Response) => {
-  try {
-    const { assignmentId } = req.body;
-
-    const isAssignmentIdTaken = await Assignment.findOne({
-      assignmentId,
-    });
-
-    if (isAssignmentIdTaken) {
-      return sendResponse(res, 409, `${assignmentId} already exists.`, false);
-    }
-
-    const result = await cloudinary.v2.uploader.upload((req as any).file.path, {
-      resource_type: "raw",
-    });
-
-    const notice = await Notice.create({
-      ...req.body,
-      author: {
-        authorId: req.user.id,
-        authorName: req.user.name,
-      },
-      noticeFile: result.url,
-    });
-
-    removeFile((req as any).file.path);
-
-    res.status(201).json({
-      message: `Notice with Notice ID ${assignmentId} added successfully.`,
-      success: true,
-      data: notice,
-    });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
@@ -566,6 +483,145 @@ export const getFacultyTimetable = async (req: Request, res: Response) => {
       true,
       { periods: facultyPeriods }
     );
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};
+
+export const getAssignments = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+
+    const assignments = await Assignments.find({ facultyId })
+      .populate({
+        path: "courseId",
+        select: "courseName courseCode courseShortName",
+      })
+      .sort({ createdAt: -1 })
+      .lean(); // 👈 makes it plain JS object, no need for TS Document inference
+
+    const response = assignments.map((a) => {
+      const course = a.courseId as unknown as {
+        courseName: string;
+        courseCode: string;
+        courseShortName: string;
+      };
+
+      return {
+        _id: a._id,
+        assignmentNumber: a.assignmentNumber,
+        assignmentName: a.assignmentName,
+        dueDate: a.dueDate,
+        assignmentFileUrl: a.assignmentFileUrl,
+        submittedStudentsCount: a.submittedStudents.length,
+        createdAt: a.createdAt,
+        updatedAt: a.updatedAt,
+        course: {
+          courseName: course.courseName,
+          courseCode: course.courseCode,
+          courseShortName: course.courseShortName,
+        },
+      };
+    });
+
+    return sendResponse(res, 200, "", true, { assignments: response });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};
+
+export const uploadAssignment = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+    const faculty = await Faculty.findById(facultyId);
+
+    if (!faculty) {
+      return sendResponse(res, 404, "Faculty not found.", false);
+    }
+
+    const { courseCode, assignmentNumber, assignmentName, dueDate } = req.body;
+
+    const course = await Course.findOne({ courseCode });
+
+    if (!course) {
+      fs.unlinkSync((req as any).file.path);
+      return sendResponse(
+        res,
+        404,
+        `No course with code ${courseCode} found.`,
+        false
+      );
+    }
+
+    // Check for duplicate assignment
+    const assignmentExists = await Assignments.findOne({
+      courseId: course._id,
+      assignmentNumber,
+    });
+
+    if (assignmentExists) {
+      fs.unlinkSync((req as any).file.path);
+      return sendResponse(res, 409, "Assignment already exists.", false);
+    }
+
+    // Upload file to Cloudinary
+    const result = await cloudinary.v2.uploader.upload((req as any).file.path, {
+      resource_type: "raw",
+    });
+
+    fs.unlinkSync((req as any).file.path); // Clean up local file
+
+    // Create assignment
+    const assignment = await Assignments.create({
+      courseId: course._id,
+      facultyId: faculty._id,
+      assignmentNumber,
+      assignmentName,
+      dueDate,
+      assignmentFileUrl: result.secure_url,
+    });
+
+    const populatedAssignment = await Assignments.findById(assignment._id)
+      .populate({
+        path: "courseId",
+        select: "courseName courseShortName courseCode semester section",
+      })
+      .populate({
+        path: "facultyId",
+        select: "name email",
+      });
+
+    return sendResponse(res, 201, "Assignment uploaded successfully.", true, {
+      assignment: populatedAssignment,
+    });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+};
+
+export const deleteAssignment = async (req: Request, res: Response) => {
+  try {
+    const facultyId = req.user?.id;
+    const assignmentId = req.query.assignmentId;
+
+    const deleted = await Assignments.findOneAndDelete({
+      _id: assignmentId,
+      facultyId,
+    });
+
+    if (!deleted) {
+      return sendResponse(
+        res,
+        404,
+        "Assignment not found or not posted by you.",
+        false
+      );
+    }
+
+    return sendResponse(res, 200, "Assignment deleted successfully.", true);
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal Server Error.", false);

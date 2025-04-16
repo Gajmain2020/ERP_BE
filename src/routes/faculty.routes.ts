@@ -2,7 +2,9 @@ import { Router } from "express";
 import { addNewCourse, getNotices } from "../controllers/admin.controller";
 import {
   changePassword,
+  deleteAssignment,
   deletePyq,
+  getAssignments,
   getFacultyProfile,
   getFacultyTimetable,
   getPyqs,
@@ -10,6 +12,7 @@ import {
   publishNotice,
   registerFaculty,
   updateProfile,
+  uploadAssignment,
   uploadPyq,
 } from "../controllers/faculty.controller";
 import { authenticateFacultyToken } from "../middleware/faculty.middleware";
@@ -37,6 +40,15 @@ router
 
 //adding course
 router.route("/add-course").post(authenticateFacultyToken, addNewCourse);
+
+// ASSIGNMENT RELATED ROUTE
+router.route("/get-assignments").get(authenticateFacultyToken, getAssignments);
+router
+  .route("/upload-assignment")
+  .post(authenticateFacultyToken, upload.single("pdf"), uploadAssignment);
+router
+  .route("/delete-assignment")
+  .delete(authenticateFacultyToken, deleteAssignment);
 
 // TIMETABLE RELATED ROUTE
 router
