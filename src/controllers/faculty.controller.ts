@@ -18,7 +18,7 @@ import { LogOutError, sendResponse } from "../utils/utils";
 //Utility function for attendance
 function getLast5WorkingDays() {
   const dates = [];
-  let current = new Date();
+  const current = new Date();
   while (dates.length < 5) {
     const day = current.getDay(); // 0 = Sunday, 6 = Saturday
     if (day !== 0) {
@@ -730,6 +730,48 @@ export async function getStudents(req: Request, res: Response) {
     const students = await Student.find(filter).select("name rollNumber _id");
 
     return sendResponse(res, 200, "", true, { students });
+  } catch (error) {
+    LogOutError(error);
+    return sendResponse(res, 500, "Internal server error.", false);
+  }
+}
+
+export async function saveAttendance(req: Request, res: Response) {
+  try {
+    const {
+      courseId,
+      department,
+      semester,
+      section,
+      date,
+      periodNumber,
+      presentStudentIds,
+    } = req.body;
+
+    const facultyId = req.user?.id;
+
+    // Fetch all students of the class
+    const allStudents = await Student.find({ department, semester, section });
+
+    const attendanceList = allStudents.map((student) => ({
+      student: student._id,
+      status: presentStudentIds.includes(student._id.toString())
+        ? "Present"
+        : "Absent",
+    }));
+
+    await Attendance.create({
+      course: courseId,
+      department,
+      semester,
+      section,
+      date,
+      periodNumber,
+      students: attendanceList,
+      faculty: facultyId,
+    });
+
+    res.status(200).json({ success: true, message: "Attendance saved" });
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal server error.", false);
