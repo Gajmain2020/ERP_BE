@@ -7,6 +7,7 @@ import {
   getAssignments,
   getFacultyProfile,
   getFacultyTimetable,
+  getPendingAttendanceClass,
   getPyqs,
   loginFaculty,
   publishNotice,
@@ -40,6 +41,11 @@ router
 
 //adding course
 router.route("/add-course").post(authenticateFacultyToken, addNewCourse);
+
+// ATTENDANCE RELATED ROUTE
+router
+  .route("/get-pending-attendance-classes")
+  .get(authenticateFacultyToken, getPendingAttendanceClass);
 
 // ASSIGNMENT RELATED ROUTE
 router.route("/get-assignments").get(authenticateFacultyToken, getAssignments);

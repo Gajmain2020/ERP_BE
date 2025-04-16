@@ -5,6 +5,7 @@ import fs from "fs";
 import jwt from "jsonwebtoken";
 import { Error500 } from "../constants";
 import { Assignments } from "../models/assignment.models";
+import { Attendance } from "../models/attendance.model";
 import { Course } from "../models/course.models";
 import { Faculty } from "../models/faculty.models";
 import { Notice } from "../models/notice.models";
@@ -12,6 +13,21 @@ import { PYQ } from "../models/pyq.model";
 import { Timetable } from "../models/timetable.model";
 import cloudinary from "../utils/cloudinary.config";
 import { LogOutError, sendResponse } from "../utils/utils";
+
+//Utility function for attendance
+function getLast5WorkingDays() {
+  const dates = [];
+  let current = new Date();
+  while (dates.length < 5) {
+    const day = current.getDay(); // 0 = Sunday, 6 = Saturday
+    if (day !== 0) {
+      // ignore Sundays
+      dates.push(new Date(current)); // add clone
+    }
+    current.setDate(current.getDate() - 1);
+  }
+  return dates.reverse(); // to keep chronological order
+}
 
 export const registerFaculty = async (
   req: Request,
@@ -625,5 +641,77 @@ export const deleteAssignment = async (req: Request, res: Response) => {
   } catch (error) {
     LogOutError(error);
     return sendResponse(res, 500, "Internal Server Error.", false);
+  }
+};
+
+export const getPendingAttendanceClass = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const facultyId = req.user?.id;
+    const last5Days = getLast5WorkingDays(); // Function already available
+    const dateStrings = last5Days.map(
+      (date) => date.toISOString().split("T")[0]
+    );
+
+    const timetables = await Timetable.find({
+      "week.periods.faculty": facultyId,
+    });
+
+    const missingAttendance = [];
+
+    for (const timetable of timetables) {
+      for (const dayObj of timetable.week) {
+        for (const period of dayObj.periods) {
+          if (String(period.faculty) !== facultyId) continue;
+
+          for (const dateStr of dateStrings) {
+            const date = new Date(dateStr);
+            const weekday = date.toLocaleDateString("en-US", {
+              weekday: "long",
+            });
+
+            if (dayObj.day !== weekday) continue;
+
+            const attendanceExists = await Attendance.findOne({
+              date: dateStr,
+              course: period.course,
+              periodNumber: period.periodNumber,
+              faculty: facultyId,
+            });
+
+            if (!attendanceExists) {
+              // Populate the course manually here
+              const populatedCourse = await Course.findById(period.course);
+
+              if (!populatedCourse) continue;
+
+              missingAttendance.push({
+                date: dateStr,
+                day: dayObj.day,
+                periodNumber: period.periodNumber,
+                course: {
+                  _id: populatedCourse._id,
+                  courseName: populatedCourse.courseName,
+                  courseCode: populatedCourse.courseCode,
+                  courseShortName: populatedCourse.courseShortName,
+                },
+                section: timetable.section,
+                department: timetable.department,
+                semester: timetable.semester,
+              });
+            }
+          }
+        }
+      }
+    }
+
+    return sendResponse(res, 200, "", true, {
+      pendingAttendance: missingAttendance,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server Error" });
   }
 };
